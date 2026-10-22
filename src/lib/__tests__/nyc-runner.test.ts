@@ -4,7 +4,7 @@ import { computePaces, suggestGoals } from '../paces';
 import { nextAction } from '../races';
 import { nycSeedRaces } from '../presets';
 import { geocodeQueries } from '../gym';
-import { accessKm, ordinal, routeIdeas } from '../routes';
+import { accessKm, ordinal, routeOptions } from '../routes';
 import { profile as base } from './fixtures';
 import type { Profile } from '../../types';
 
@@ -46,15 +46,19 @@ describe('home in lower Manhattan', () => {
     expect(geocodeQueries('Prince and Mercer')).toEqual(['Prince and Mercer', 'Prince Street, New York, NY']);
   });
 
-  it('turns a long run into a Hudson River Greenway out-and-back', () => {
+  it('offers several route options for a long run from home', () => {
     const home = { lat: 40.7308, lon: -73.9973 }; // Washington Square Park
     expect(accessKm(home)).toBeGreaterThan(0.8);
     expect(accessKm(home)).toBeLessThan(2);
     const long = { id: 'l', date: '2027-09-19', type: 'long' as const, distanceKm: 20, title: 'Long run', description: '' };
-    const [first] = routeIdeas(long, home);
-    expect(first.title).toMatch(/Greenway/);
-    expect(first.detail).toMatch(/W 1\d\dth St|Harlem|W 1\d\d(st|nd|rd|th)/);
-    expect(routeIdeas(long, home).some((r) => r.title.startsWith('Central Park'))).toBe(true);
+    const options = routeOptions(long, { home, homeAddress: 'Houston St & 6th Ave, New York, NY', nyc: true });
+    expect(options.length).toBeGreaterThanOrEqual(2);
+    expect(options[0].title).toMatch(/Greenway/);
+    expect(options[0].detail).toMatch(/W 1\d\d(st|nd|rd|th) St/);
+    expect(Math.abs(options[0].km - 20)).toBeLessThan(1.5);
+    expect(options.some((r) => r.title.startsWith('Central Park'))).toBe(true);
+    expect(options[0].mapsUrl).toContain('waypoints=');
+    expect(new URL(options[0].mapsUrl).searchParams.get('origin')).toBe('Houston St & 6th Ave, New York, NY');
     expect(ordinal(72)).toBe('72nd');
     expect(ordinal(111)).toBe('111th');
   });

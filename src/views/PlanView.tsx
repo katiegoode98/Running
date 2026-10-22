@@ -7,9 +7,6 @@ import { runMinutes, weekActualKm } from '../lib/plan';
 import { workoutsToIcs } from '../lib/calendar';
 import { googleConnected, pushWorkoutsToGoogle } from '../lib/google';
 import type { Paces, Phase, Workout } from '../types';
-import { routeIdeas } from '../lib/routes';
-import { NYC_2027 } from '../lib/presets';
-import { RouteIdeas } from './TodayView';
 
 const PHASE_INFO: Record<Phase, string> = {
   foundation: 'Foundation: steady volume, strength work and tune-up races. Long runs stay at half-marathon distance until the marathon block starts.',
@@ -35,7 +32,6 @@ export function PlanView() {
   const thisMonday = mondayOf(today());
   const weeks = plan.weeks.filter((w) => showPast || w.startDate >= thisMonday);
   const u = profile.units;
-  const nyc = profile.raceDate === NYC_2027.raceDate;
   const doneOn = (date: string) => logs.filter((l) => l.date === date).reduce((s, l) => s + l.distanceKm, 0);
 
   function downloadIcs() {
@@ -97,7 +93,6 @@ export function PlanView() {
             {w.workouts.map((x) => (
               <Fragment key={x.id}>
                 <WorkoutLine w={x} done={doneOn(x.date)} />
-                {nyc && x.type === 'long' && x.date >= today() && <RouteIdeas ideas={routeIdeas(x, state.geo.home)} />}
               </Fragment>
             ))}
           </Card>
