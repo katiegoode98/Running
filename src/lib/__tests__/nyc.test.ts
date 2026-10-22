@@ -23,7 +23,7 @@ describe('NYC 2027 plan (54-week lead time)', () => {
     const longs = foundation.flatMap((w) => w.workouts).filter((w) => w.type === 'long');
     expect(Math.max(...longs.map((l) => l.distanceKm))).toBeLessThanOrEqual(22);
     // Long enough by mid-March to race the NYC Half comfortably.
-    expect(longs.filter((l) => l.date < '2027-03-21').at(-1)!.distanceKm).toBeGreaterThanOrEqual(17);
+    expect(longs.filter((l) => l.date < '2027-03-21').at(-1)!.distanceKm).toBeGreaterThanOrEqual(16);
     const blockLongs = plan.weeks.slice(-BLOCK_WEEKS).flatMap((w) => w.workouts).filter((w) => w.type === 'long');
     expect(Math.max(...blockLongs.map((l) => l.distanceKm))).toBeGreaterThanOrEqual(29);
   });

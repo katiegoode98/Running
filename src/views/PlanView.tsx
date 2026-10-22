@@ -5,7 +5,8 @@ import { useBusyEvents } from './CalendarView';
 import { useStore } from '../store';
 import { addDays, formatDate, mondayOf, today } from '../lib/dates';
 import { fmtDist, fmtMinutes, fmtPace } from '../lib/format';
-import { runMinutes, weekActualKm } from '../lib/plan';
+import { runMinutes, weekActualKm, weekLabel } from '../lib/plan';
+import { StarterWeekOffer } from '../components/StarterWeekOffer';
 import { workoutsToIcs } from '../lib/calendar';
 import { googleConnected, pushWorkoutsToGoogle } from '../lib/google';
 import type { Paces, Phase, Plan, PlanWeek, Workout } from '../types';
@@ -79,6 +80,7 @@ export function PlanView() {
 
   return (
     <div className="stack">
+      <StarterWeekOffer />
       <Card
         title="Training paces"
         actions={
@@ -105,13 +107,13 @@ export function PlanView() {
         return (
           <Card
             key={w.startDate}
-            title={<>Week {w.index + 1} · {formatDate(w.startDate, { day: 'numeric', month: 'short' })} <span className={`phase p-${w.phase}`}>{w.phase}</span>{w.cutback && <span className="pill">cutback</span>}</>}
+            title={<>{weekLabel(plan, w)} · {formatDate(w.startDate, { day: 'numeric', month: 'short' })} {!w.intro && <span className={`phase p-${w.phase}`}>{w.phase}</span>}{w.cutback && !w.intro && <span className="pill">cutback</span>}</>}
             actions={<span className={`pill ${progress.done === progress.total ? 'ok' : ''}`}>{progress.done}/{progress.total} done</span>}
           >
             <p className="muted small week-totals">
               {w.startDate <= today() ? `${fmtDist(actual, u, 0)} of ` : ''}{fmtDist(w.targetKm, u, 0)} · ~{fmtMinutes(w.workouts.reduce((s, x) => s + runMinutes(x, plan.paces), 0))}
             </p>
-            {w.index === plan.weeks.findIndex((x) => x.phase === w.phase) && <p className="muted small">{PHASE_INFO[w.phase]}</p>}
+            {plan.weeks.find((x) => x.phase === w.phase && !x.intro) === w && <p className="muted small">{PHASE_INFO[w.phase]}</p>}
             {w.adaptationNote && <p className="note">↻ {w.adaptationNote}</p>}
             <WeekChecklist week={w} />
             <div className="row">

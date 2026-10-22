@@ -80,12 +80,14 @@ export interface PlanWeek {
   cutback: boolean;
   workouts: Workout[];
   adaptationNote?: string;
+  intro?: boolean; // a lighter part-week before the plan proper starts (plan begun mid-week)
 }
 
 export interface Plan {
   createdAt: string;
   weeks: PlanWeek[];
   paces: Paces;
+  starterDeclined?: boolean; // runner chose to keep a full first week despite starting mid-week
 }
 
 export interface Paces {

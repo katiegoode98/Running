@@ -1,8 +1,8 @@
 import type { Paces, Phase, Plan, PlanWeek, Profile, Units, Workout, WorkoutType } from '../types';
-import { addDays, daysBetween, mondayOf } from './dates';
+import { addDays, dayOfWeek, daysBetween, formatDate, mondayOf } from './dates';
 import { fmtDist, fmtPace } from './format';
 import { computePaces, MARATHON_KM } from './paces';
-import { withStrengthDays } from './strength';
+import { strengthSessionFor, strengthWorkout, withStrengthDays } from './strength';
 
 /*
  * Plan generator.
@@ -32,6 +32,8 @@ export interface GenerateOptions {
   startLongKm?: number;
   paces?: Paces;
   firstIndex?: number;
+  /** Already-completed activities to keep when this week becomes a starter week. */
+  keep?: Workout[];
 }
 
 // Day offsets from the long-run day, by number of run days per week.
@@ -61,7 +63,22 @@ function phaseFor(weekIdx: number, total: number): Phase {
   return 'foundation';
 }
 
+/**
+ * Generates the plan. Started Wednesday–Sunday, the rest of this week becomes a
+ * lighter starter week and the plan proper (week 1) begins next Monday, so the
+ * progression starts from a full week rather than a few leftover days.
+ */
 export function generatePlan(profile: Profile, opts: GenerateOptions): Plan {
+  const dow = dayOfWeek(opts.startDate);
+  const midWeek = dow === 0 || dow >= 3;
+  const nextMonday = addDays(mondayOf(opts.startDate), 7);
+  if (opts.firstIndex || !midWeek || nextMonday > profile.raceDate) return generateWeeks(profile, opts);
+  const main = generateWeeks(profile, { ...opts, startDate: nextMonday, firstIndex: 1 });
+  const starter = starterWeek(main.weeks[0], opts.startDate, profile, main.paces, opts.keep ?? []);
+  return { ...main, weeks: [starter, ...main.weeks] };
+}
+
+function generateWeeks(profile: Profile, opts: GenerateOptions): Plan {
   const paces = opts.paces ?? computePaces(profile.goalTimeSec, profile.recentRace);
   const start = mondayOf(opts.startDate);
   const raceMonday = mondayOf(profile.raceDate);
@@ -258,6 +275,63 @@ function applyRaceWeek(workouts: Workout[], profile: Profile, paces: Paces): voi
   else workouts.push(race);
   const eve = workouts.findIndex((w) => w.date === addDays(raceDate, -1));
   if (eve >= 0) workouts[eve] = mk(workouts[eve].date, workouts[eve].date, 'recovery', 3, 'Shakeout', 'Optional 15–20 min shakeout with a few strides. Lay out kit, carb-load, sleep.', paces.recovery);
+}
+
+/**
+ * The lighter part-week before the plan proper: roughly half a week from
+ * `startDate` to Sunday — an easy run, a shortened long run on the last day,
+ * and a lighter gym session when there's room. No quality session yet.
+ * Activities already completed this week (`keep`) stay in the list.
+ */
+export function starterWeek(firstWeek: PlanWeek, startDate: string, profile: Profile, paces: Paces, keep: Workout[]): PlanWeek {
+  const u = profile.units;
+  const weekStart = addDays(firstWeek.startDate, -7);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).filter((d) => d >= startDate);
+  const template = firstWeek.workouts;
+  const kept = new Set(keep.map((w) => w.type));
+  const added: Workout[] = [];
+
+  const longKm = template.find((w) => w.type === 'long')?.distanceKm ?? 10;
+  const easyKm = template.find((w) => w.type === 'easy')?.distanceKm ?? 5;
+  const last = days[days.length - 1];
+  if (days.length >= 2 && !kept.has('long')) {
+    const km = round1(Math.max(6, Math.min(longKm * 0.6, profile.longestRecentRunKm || Infinity)));
+    added.push(mk(last, last, 'long', km, 'Long run (starter week)', `A gentle ${fmtDist(km, u)} at ${fmtPace(paces.long, u)} to ease in — the full long runs start next week.`, paces.long));
+  }
+  if (!kept.has('easy') && !kept.has('recovery')) {
+    const d = days.length >= 3 ? days[days.length - 3] : days[0];
+    const km = days.length >= 2 ? easyKm : round1(easyKm * 0.8);
+    added.push(mk(d, d, 'easy', km, 'Easy run', `Easy aerobic running at ~${fmtPace(paces.easy, u)}. Finish with 4 × 20 s relaxed strides.`, paces.easy));
+  }
+  if (days.length >= 4 && !kept.has('strength')) {
+    const weeksToRace = Math.floor(daysBetween(weekStart, profile.raceDate) / 7);
+    added.push(strengthWorkout(days[0], strengthSessionFor(firstWeek.phase, true, weeksToRace)));
+  }
+
+  const used = new Set([...keep, ...added].map((w) => w.date));
+  const rests = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).filter((d) => !used.has(d)).map((d) => rest(d, d));
+  const workouts = [...keep, ...added, ...rests].sort((a, b) => a.date.localeCompare(b.date));
+  return {
+    index: 0,
+    startDate: weekStart,
+    phase: firstWeek.phase,
+    targetKm: Math.round(workouts.reduce((s, w) => s + w.distanceKm, 0)),
+    cutback: true,
+    intro: true,
+    workouts,
+    adaptationNote: `Starter week — a lighter half week to ease in. The full plan starts on ${formatDate(firstWeek.startDate)}.`,
+  };
+}
+
+/** "Starter week" or "Week n", numbering the plan proper from 1. */
+export function weekLabel(plan: Plan, week: PlanWeek): string {
+  if (week.intro) return 'Starter week';
+  return `Week ${week.index + (plan.weeks[0]?.intro ? 0 : 1)}`;
+}
+
+/** Number of full plan weeks (excluding a starter week). */
+export function planWeekCount(plan: Plan): number {
+  return plan.weeks.filter((w) => !w.intro).length;
 }
 
 /** Planned week totals vs actual logs. */

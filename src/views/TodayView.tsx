@@ -2,7 +2,8 @@ import { Card, Empty } from '../components/ui';
 import { useStore } from '../store';
 import { daysBetween, mondayOf, today } from '../lib/dates';
 import { fmtDist } from '../lib/format';
-import { runMinutes, weekActualKm } from '../lib/plan';
+import { planWeekCount, runMinutes, weekActualKm, weekLabel } from '../lib/plan';
+import { StarterWeekOffer } from '../components/StarterWeekOffer';
 import { dailyTargets } from '../lib/nutrition';
 import { nextAction } from '../lib/races';
 import { audioAdvice } from '../lib/media';
@@ -35,8 +36,10 @@ export function TodayView({ onLog }: { onLog?: () => void }) {
           <div className="muted">{profile.raceName || 'Marathon'}</div>
           <div className="big">{daysToRace} days to go</div>
         </div>
-        {week && <div className="muted">Week {week.index + 1} of {plan.weeks.length} · {week.phase} · {fmtDist(weekActualKm(week, logs), u, 0)} of {fmtDist(week.targetKm, u, 0)}</div>}
+        {week && <div className="muted">{week.intro ? 'Starter week' : `${weekLabel(plan, week)} of ${planWeekCount(plan)} · ${week.phase}`} · {fmtDist(weekActualKm(week, logs), u, 0)} of {fmtDist(week.targetKm, u, 0)}</div>}
       </div>
+
+      <StarterWeekOffer />
 
       <Card title="Today">
         {week && todays.length > 0 ? (
