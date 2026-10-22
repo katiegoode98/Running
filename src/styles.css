@@ -76,7 +76,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); }
 .app { max-width: 920px; margin: 0 auto; padding: 0 16px 48px; }
-.top { position: sticky; top: 0; background: var(--bg); padding: 12px 0; padding-top: max(12px, env(safe-area-inset-top)); z-index: 2; }
+.top { position: sticky; top: 0; background: var(--bg); padding: 12px 0; padding-top: calc(env(safe-area-inset-top) + 12px); z-index: 2; }
 .top-nav { display: flex; gap: 4px; overflow-x: auto; margin-top: 10px; padding: 2px; }
 .top-nav button { border: none; background: none; box-shadow: none; padding: 7px 12px; border-radius: 999px; color: var(--muted); white-space: nowrap; font-weight: 500; }
 .top-nav button:hover { background: var(--accent-soft); color: var(--text); }
@@ -107,7 +107,8 @@ button.block { width: 100%; margin-top: 8px; padding: 12px; display: flex; }
 /* Phone layout: bottom tab bar, larger touch targets, no iOS zoom on focus. */
 @media (max-width: 700px) {
   .app { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
-  .top { position: static; padding-bottom: 14px; }
+  /* Keep the banner clear of the frosted strip iOS draws under the clock. */
+  .top { position: static; padding-top: calc(env(safe-area-inset-top) + 24px); padding-bottom: 14px; }
   .banner { min-height: 100px; padding: 14px 16px; border-radius: 16px; }
   .banner-race { font-size: 1.1rem; }
   .banner-count strong { font-size: 2rem; }
