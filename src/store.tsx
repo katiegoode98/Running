@@ -34,6 +34,7 @@ export const initialState: AppState = {
   settings: {
     googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
     spotifyClientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? '',
+    theme: 'hudson',
   },
   geo: {},
 };

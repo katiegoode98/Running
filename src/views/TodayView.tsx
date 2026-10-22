@@ -31,13 +31,13 @@ export function TodayView({ onLog }: { onLog?: () => void }) {
 
   return (
     <div className="stack">
-      <div className="hero">
-        <div>
-          <div className="muted">{profile.raceName || 'Marathon'}</div>
-          <div className="big">{daysToRace} days to go</div>
+      {week && (
+        <div className="hero">
+          <strong>{week.intro ? 'Starter week' : `${weekLabel(plan, week)} of ${planWeekCount(plan)}`}</strong>
+          {!week.intro && <span className={`phase p-${week.phase}`}>{week.phase}</span>}
+          <span className="muted">{fmtDist(weekActualKm(week, logs), u, 0)} of {fmtDist(week.targetKm, u, 0)}</span>
         </div>
-        {week && <div className="muted">{week.intro ? 'Starter week' : `${weekLabel(plan, week)} of ${planWeekCount(plan)} · ${week.phase}`} · {fmtDist(weekActualKm(week, logs), u, 0)} of {fmtDist(week.targetKm, u, 0)}</div>}
-      </div>
+      )}
 
       <StarterWeekOffer />
 

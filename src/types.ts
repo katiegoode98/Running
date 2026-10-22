@@ -222,9 +222,12 @@ export interface FoodLog {
   fatG: number;
 }
 
+export type ThemeId = 'hudson' | 'park' | 'dusk' | 'morning';
+
 export interface Settings {
   googleClientId: string;
   spotifyClientId: string;
+  theme: ThemeId;
 }
 
 export interface Geo {
