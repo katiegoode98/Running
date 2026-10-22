@@ -34,8 +34,8 @@ export function TodayView({ onLog }: { onLog?: () => void }) {
       <Card title="Today">
         {todays ? (
           <>
-            <WorkoutLine w={todays} />
-            {onLog && <button className="primary block" onClick={onLog}>Log this run</button>}
+            <WorkoutLine w={todays} defaultOpen={todays.type === 'strength'} />
+            {onLog && todays.distanceKm > 0 && <button className="primary block" onClick={onLog}>Log this run</button>}
             <p className="muted small">🎧 {audioAdvice(todays.type)}</p>
           </>
         ) : <p>Rest day — mobility, a gym class, or nothing at all.</p>}

@@ -172,3 +172,7 @@ td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: top; }
 .route-option p { margin: 4px 0; }
 .route-option .row { gap: 4px; }
 .pill.tag { margin-left: 0; background: var(--card); }
+.t-strength { background: #e7f5ff; color: #1c4f82; }
+.exercises { padding-left: 20px; margin: 6px 0; }
+.exercises li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.exercises .sets { font-weight: 700; white-space: nowrap; }

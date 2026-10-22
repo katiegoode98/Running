@@ -2,6 +2,7 @@ import type { Paces, Phase, Plan, PlanWeek, Profile, Units, Workout, WorkoutType
 import { addDays, daysBetween, mondayOf } from './dates';
 import { fmtDist, fmtPace } from './format';
 import { computePaces, MARATHON_KM } from './paces';
+import { withStrengthDays } from './strength';
 
 /*
  * Plan generator.
@@ -128,7 +129,7 @@ export function generatePlan(profile: Profile, opts: GenerateOptions): Plan {
     weeks.push(week);
   }
 
-  return { createdAt: new Date().toISOString(), weeks, paces };
+  return withStrengthDays({ createdAt: new Date().toISOString(), weeks, paces }, profile.raceDate);
 }
 
 interface WeekInput {
@@ -266,11 +267,12 @@ export function weekActualKm(week: PlanWeek, logs: { date: string; distanceKm: n
 }
 
 /**
- * Estimated running time in minutes. Quality sessions mix the target pace with
+ * Estimated training time in minutes (gym sessions use their planned length). Quality sessions mix the target pace with
  * warm-up, cool-down and recoveries at easy pace, so ~60% of the distance is
  * counted at the target pace and the rest at easy pace.
  */
 export function runMinutes(w: Workout, paces: Paces): number {
+  if (w.type === 'strength') return w.strength?.durationMin ?? 45;
   if (w.type === 'rest' || w.distanceKm === 0) return 0;
   const pace = w.paceSecPerKm ?? paces.easy;
   const mixed = w.type === 'tempo' || w.type === 'intervals' || w.type === 'marathon-pace';

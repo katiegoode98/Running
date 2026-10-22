@@ -34,7 +34,25 @@ export type WorkoutType =
   | 'intervals'
   | 'marathon-pace'
   | 'race'
+  | 'strength'
   | 'rest';
+
+export interface StrengthExercise {
+  name: string;
+  sets: number;
+  reps: string;
+  load: string;
+  cue: string;
+}
+
+export interface StrengthSession {
+  title: string;
+  durationMin: number;
+  focus: string;
+  warmUp: string;
+  exercises: StrengthExercise[];
+  notes: string;
+}
 
 export type Phase = 'foundation' | 'base' | 'build' | 'peak' | 'taper';
 
@@ -46,6 +64,7 @@ export interface Workout {
   title: string;
   description: string;
   paceSecPerKm?: number;
+  strength?: StrengthSession;
   movedFrom?: string;
   moveReason?: string;
 }

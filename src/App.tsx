@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from './store';
 import { completeSpotifyLogin } from './lib/spotify';
+import { withStrengthDays } from './lib/strength';
 import { TodayView } from './views/TodayView';
 import { PlanView } from './views/PlanView';
 import { LogView } from './views/LogView';
@@ -31,7 +32,7 @@ type Tab = (typeof TABS)[number][0];
 const PRIMARY = 4;
 
 export function App() {
-  const { state } = useStore();
+  const { state, update } = useStore();
   const [tab, setTabState] = useState<Tab>(() => (new URLSearchParams(location.search).get('state') === 'spotify' ? 'music' : 'today'));
   const [moreOpen, setMoreOpen] = useState(false);
   const setTab = (t: Tab) => {
@@ -42,6 +43,13 @@ export function App() {
 
   // Plans saved before race times were validated can have impossible paces (seconds per km).
   const pacesBroken = !!state.plan && state.plan.paces.easy < 155;
+
+  // Plans created before gym days existed get one strength session added per week.
+  useEffect(() => {
+    if (state.plan && state.profile && !state.plan.weeks.some((w) => w.workouts.some((x) => x.type === 'strength'))) {
+      update({ plan: withStrengthDays(state.plan, state.profile.raceDate) });
+    }
+  }, [state.plan, state.profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (state.settings.spotifyClientId) completeSpotifyLogin(state.settings.spotifyClientId).catch((e) => alert(e.message));
