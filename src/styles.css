@@ -162,3 +162,13 @@ td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: top; }
 .routes { margin: 4px 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--accent-soft); }
 .routes summary { cursor: pointer; }
 .note-card { background: var(--accent-soft); border-color: var(--accent); margin-bottom: 14px; font-size: 0.92rem; }
+.duration { color: var(--text); font-weight: 600; white-space: nowrap; }
+.workout.tappable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.workout.tappable:active { background: var(--accent-soft); }
+.workout.open { border-bottom: none; }
+.route-hint { color: var(--accent); margin-top: 4px; font-weight: 600; }
+.route-options { background: var(--accent-soft); border-radius: 10px; padding: 4px 12px 8px; margin: 0 0 10px; }
+.route-option { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.route-option p { margin: 4px 0; }
+.route-option .row { gap: 4px; }
+.pill.tag { margin-left: 0; background: var(--card); }

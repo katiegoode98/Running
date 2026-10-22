@@ -2,14 +2,11 @@ import { Fragment, useState } from 'react';
 import { Card, Empty, WorkoutLine } from '../components/ui';
 import { useStore } from '../store';
 import { addDays, formatDate, mondayOf, today } from '../lib/dates';
-import { fmtDist, fmtPace } from '../lib/format';
-import { weekActualKm } from '../lib/plan';
+import { fmtDist, fmtMinutes, fmtPace } from '../lib/format';
+import { runMinutes, weekActualKm } from '../lib/plan';
 import { workoutsToIcs } from '../lib/calendar';
 import { googleConnected, pushWorkoutsToGoogle } from '../lib/google';
-import type { Phase, Workout } from '../types';
-import { routeIdeas } from '../lib/routes';
-import { NYC_2027 } from '../lib/presets';
-import { RouteIdeas } from './TodayView';
+import type { Paces, Phase, Workout } from '../types';
 
 const PHASE_INFO: Record<Phase, string> = {
   foundation: 'Foundation: steady volume, strength work and tune-up races. Long runs stay at half-marathon distance until the marathon block starts.',
@@ -19,8 +16,10 @@ const PHASE_INFO: Record<Phase, string> = {
   taper: 'Taper: volume drops so you arrive fresh — trust the training.',
 };
 
-export function workoutLabel(w: Workout, units: 'km' | 'mi'): string {
-  return w.distanceKm > 0 ? `🏃 ${w.title} – ${fmtDist(w.distanceKm, units)}` : `🏃 ${w.title}`;
+export function workoutLabel(w: Workout, units: 'km' | 'mi', paces?: Paces): string {
+  if (w.distanceKm <= 0) return `🏃 ${w.title}`;
+  const time = paces ? ` (~${fmtMinutes(runMinutes(w, paces))})` : '';
+  return `🏃 ${w.title} – ${fmtDist(w.distanceKm, units)}${time}`;
 }
 
 export function PlanView() {
@@ -33,12 +32,11 @@ export function PlanView() {
   const thisMonday = mondayOf(today());
   const weeks = plan.weeks.filter((w) => showPast || w.startDate >= thisMonday);
   const u = profile.units;
-  const nyc = profile.raceDate === NYC_2027.raceDate;
   const doneOn = (date: string) => logs.filter((l) => l.date === date).reduce((s, l) => s + l.distanceKm, 0);
 
   function downloadIcs() {
     const workouts = plan!.weeks.flatMap((w) => w.workouts).filter((w) => w.date >= today());
-    const blob = new Blob([workoutsToIcs(workouts, (w) => workoutLabel(w, u))], { type: 'text/calendar' });
+    const blob = new Blob([workoutsToIcs(workouts, (w) => workoutLabel(w, u, plan!.paces))], { type: 'text/calendar' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'marathon-training.ics';
@@ -51,7 +49,7 @@ export function PlanView() {
     const workouts = plan!.weeks.flatMap((w) => w.workouts).filter((w) => w.date >= today() && w.date < until);
     if (!confirm(`Add ${workouts.filter((w) => w.type !== 'rest').length} workouts (next 4 weeks) to your Google Calendar?`)) return;
     try {
-      const n = await pushWorkoutsToGoogle(workouts, (w) => workoutLabel(w, u));
+      const n = await pushWorkoutsToGoogle(workouts, (w) => workoutLabel(w, u, plan!.paces));
       setMsg(`Added ${n} workouts to Google Calendar.`);
     } catch (e) {
       setMsg((e as Error).message);
@@ -83,14 +81,18 @@ export function PlanView() {
           <Card
             key={w.startDate}
             title={<>Week {w.index + 1} · {formatDate(w.startDate, { day: 'numeric', month: 'short' })} <span className={`phase p-${w.phase}`}>{w.phase}</span>{w.cutback && <span className="pill">cutback</span>}</>}
-            actions={<span className="muted">{w.startDate <= today() ? `${fmtDist(actual, u, 0)} / ` : ''}{fmtDist(w.targetKm, u, 0)}</span>}
+            actions={
+              <span className="muted">
+                {w.startDate <= today() ? `${fmtDist(actual, u, 0)} / ` : ''}{fmtDist(w.targetKm, u, 0)}
+                {' '}· ~{fmtMinutes(w.workouts.reduce((s, x) => s + runMinutes(x, plan.paces), 0))}
+              </span>
+            }
           >
             {w.index === plan.weeks.findIndex((x) => x.phase === w.phase) && <p className="muted small">{PHASE_INFO[w.phase]}</p>}
             {w.adaptationNote && <p className="note">↻ {w.adaptationNote}</p>}
             {w.workouts.map((x) => (
               <Fragment key={x.id}>
                 <WorkoutLine w={x} done={doneOn(x.date)} />
-                {nyc && x.type === 'long' && x.date >= today() && <RouteIdeas ideas={routeIdeas(x, state.geo.home)} />}
               </Fragment>
             ))}
           </Card>

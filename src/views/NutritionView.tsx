@@ -3,8 +3,7 @@ import { Card, Empty, Field } from '../components/ui';
 import { useStore } from '../store';
 import { addDays, daysBetween, formatDate, today } from '../lib/dates';
 import { uid } from '../lib/format';
-import { workoutOn } from '../lib/plan';
-import { minutesNeeded } from '../lib/calendar';
+import { runMinutes, workoutOn } from '../lib/plan';
 import { dailyTargets, DIET_APPROACHES, fuelPlan, movingAverage } from '../lib/nutrition';
 import type { FoodLog } from '../types';
 
@@ -39,12 +38,12 @@ export function NutritionView() {
   if (!profile || !plan) return <Empty>Create your profile first.</Empty>;
 
   const w = workoutOn(plan, date);
-  const minutes = w ? minutesNeeded(w, plan.paces) - 30 : 0;
+  const minutes = w ? runMinutes(w, plan.paces) : 0;
   const targets = dailyTargets(profile, w, minutes, daysBetween(date, profile.raceDate));
   const eaten = state.foods.filter((f) => f.date === date);
   const sum = (k: 'kcal' | 'carbsG' | 'proteinG' | 'fatG') => eaten.reduce((s, f) => s + f[k], 0);
   const nextLong = plan.weeks.flatMap((x) => x.workouts).find((x) => x.date >= today() && (x.type === 'long' || x.type === 'race'));
-  const longMin = nextLong ? minutesNeeded(nextLong, plan.paces) - 30 : 0;
+  const longMin = nextLong ? runMinutes(nextLong, plan.paces) : 0;
   const fuel = fuelPlan(longMin, profile.weightKg);
   const num = (v: string) => Number(v) || 0;
 

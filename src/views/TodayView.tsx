@@ -2,14 +2,11 @@ import { Card, Empty, WorkoutLine } from '../components/ui';
 import { useStore } from '../store';
 import { daysBetween, mondayOf, today } from '../lib/dates';
 import { fmtDist } from '../lib/format';
-import { weekActualKm, workoutOn } from '../lib/plan';
-import { minutesNeeded } from '../lib/calendar';
+import { runMinutes, weekActualKm, workoutOn } from '../lib/plan';
 import { dailyTargets } from '../lib/nutrition';
 import { nextAction } from '../lib/races';
 import { audioAdvice } from '../lib/media';
 import { AdaptCard } from './LogView';
-import { routeIdeas } from '../lib/routes';
-import { NYC_2027 } from '../lib/presets';
 
 export function TodayView({ onLog }: { onLog?: () => void }) {
   const { state } = useStore();
@@ -19,7 +16,7 @@ export function TodayView({ onLog }: { onLog?: () => void }) {
   const daysToRace = daysBetween(t, profile.raceDate);
   const week = plan.weeks.find((w) => w.startDate === mondayOf(t));
   const todays = workoutOn(plan, t);
-  const minutes = todays ? minutesNeeded(todays, plan.paces) - 30 : 0;
+  const minutes = todays ? runMinutes(todays, plan.paces) : 0;
   const targets = dailyTargets(profile, todays, minutes, daysToRace);
   const actions = state.races.map((r) => nextAction(r, t)).filter((a) => a.urgency === 'urgent' || a.urgency === 'overdue' || a.urgency === 'soon');
   const u = profile.units;
@@ -40,7 +37,6 @@ export function TodayView({ onLog }: { onLog?: () => void }) {
             <WorkoutLine w={todays} />
             {onLog && <button className="primary block" onClick={onLog}>Log this run</button>}
             <p className="muted small">🎧 {audioAdvice(todays.type)}</p>
-            {profile.raceDate === NYC_2027.raceDate && <RouteIdeas ideas={routeIdeas(todays, state.geo.home)} />}
           </>
         ) : <p>Rest day — mobility, a gym class, or nothing at all.</p>}
         <p className="muted small">🍽 {targets.note} Target ≈ {targets.carbsG} g carbs · {targets.proteinG} g protein · {targets.kcal} kcal.</p>
@@ -60,20 +56,5 @@ export function TodayView({ onLog }: { onLog?: () => void }) {
       )}
       <AdaptCard />
     </div>
-  );
-}
-
-export function RouteIdeas({ ideas }: { ideas: ReturnType<typeof routeIdeas> }) {
-  if (!ideas.length) return null;
-  return (
-    <details className="routes">
-      <summary className="small">🗺 Route ideas from home</summary>
-      {ideas.map((r) => (
-        <p key={r.title} className="small">
-          <strong>{r.title}</strong>{r.mapsUrl && <> · <a href={r.mapsUrl} target="_blank" rel="noreferrer">map</a></>}
-          <br /><span className="muted">{r.detail}</span>
-        </p>
-      ))}
-    </details>
   );
 }

@@ -1,6 +1,6 @@
 import type { CalendarEvent, Paces, PlanWeek, Workout } from '../types';
 import { addDays, DAY_NAMES, dayOfWeek, toISODate } from './dates';
-import { isHard } from './plan';
+import { isHard, runMinutes } from './plan';
 
 // Local-time ISO "YYYY-MM-DDTHH:MM" helpers.
 export function toLocalStamp(d: Date): string {
@@ -57,8 +57,7 @@ export function largestFree(date: string, events: CalendarEvent[], from = DAY_ST
 /** Minutes needed for a workout including ~30 min to change, warm up and shower. */
 export function minutesNeeded(w: Workout, paces: Paces): number {
   if (w.type === 'rest' || w.distanceKm === 0) return 0;
-  const pace = w.paceSecPerKm ?? paces.easy;
-  return Math.ceil((w.distanceKm * pace) / 60) + 30;
+  return Math.ceil(runMinutes(w, paces)) + 30;
 }
 
 export function fits(w: Workout, date: string, events: CalendarEvent[], paces: Paces): boolean {

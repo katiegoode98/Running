@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Card, Empty, Field } from '../components/ui';
 import { useStore } from '../store';
+import { runMinutes } from '../lib/plan';
 import { formatDate, today } from '../lib/dates';
 import { fmtDist } from '../lib/format';
-import { minutesNeeded } from '../lib/calendar';
 import { audioAdvice, playlistName, searchKeywords, spokenFor } from '../lib/media';
 import { candidateTracks, createPlaylist, disconnectSpotify, fillDuration, searchSpoken, spotifyConnected, startSpotifyLogin, type Show } from '../lib/spotify';
 
@@ -25,7 +25,7 @@ export function MusicView() {
   }, [workoutId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!plan || !profile) return <Empty>Create your profile first.</Empty>;
-  const minutes = workout ? minutesNeeded(workout, plan.paces) - 30 : 0;
+  const minutes = workout ? runMinutes(workout, plan.paces) : 0;
 
   async function build() {
     if (!workout) return;
