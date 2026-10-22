@@ -29,7 +29,7 @@ Everything runs in the browser and it installs on your phone like an app. Your d
 
 The app is an installable web app. It works offline, opens full-screen from your home screen, and uses a bottom tab bar on phones.
 
-1. Deploy it to an HTTPS URL. The free options below all work from a private repo:
+1. Deploy it to an HTTPS URL. **GitHub Pages is free and unlimited for this public repo, so it's the recommended host.** Netlify's free plan charges about 15 credits per production deploy (300 credits a month), so if you use Netlify, set its production branch to `main` and turn off branch deploys and deploy previews. `netlify.toml` already skips builds for commits that don't change the app. Options:
    - **Netlify / Vercel / Cloudflare Pages:** import the GitHub repo, set the build command to `npm run build` and the output directory to `dist`.
    - **GitHub Pages** (free for public repos): in the repo's **Settings → Pages**, set *Source* to **GitHub Actions**. Every push to `main` then deploys to `https://<user>.github.io/Running/`.
 2. On iPhone, open the URL in **Safari** and tap **Share → Add to Home Screen**. On Android, use Chrome's **Install app**.
