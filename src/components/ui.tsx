@@ -38,6 +38,7 @@ const TYPE_LABEL: Record<WorkoutType, string> = {
   'marathon-pace': 'MP',
   race: 'Race',
   strength: 'Gym',
+  cross: 'Cross',
   rest: 'Rest',
 };
 

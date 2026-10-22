@@ -136,6 +136,9 @@ export function scoreClasses(
       else { score -= 3; reasons.push('Same day as the long run'); }
     } else if (today && isHard(today.type) && demanding && !cls.runningLoad) {
       score += 1; reasons.push('Stacks on a hard day so easy days stay easy');
+    } else if (today?.type === 'cross') {
+      if (cls.category === 'spin' || cls.category === 'swim' || cls.category === 'yoga' || cls.category === 'pilates') { score += 3; reasons.push('Your cross-training day — a perfect fit'); }
+      else if (demanding) { score -= 1; reasons.push('Cross-training day: keep it easy'); }
     } else if (today?.type === 'strength') {
       if (cls.category === 'strength') { score += 2; reasons.push('Your planned gym day — a class can replace the weights session'); }
       else if (demanding) { score -= 2; reasons.push('Already a gym strength day'); }

@@ -24,7 +24,9 @@ describe('generatePlan', () => {
 
   it('never increases volume by more than ~10% week on week (excluding rounding)', () => {
     for (let i = 1; i < plan.weeks.length - 3; i++) {
-      const prevNonCutback = plan.weeks.slice(0, i).filter((w) => !w.cutback).at(-1)!;
+      // The starter week (plan begun mid-week) is a part-week, so the ramp is measured from week 1.
+      const prevNonCutback = plan.weeks.slice(0, i).filter((w) => !w.cutback && !w.intro).at(-1);
+      if (!prevNonCutback) continue;
       expect(plan.weeks[i].targetKm).toBeLessThanOrEqual(prevNonCutback.targetKm * 1.1 + 6);
     }
   });

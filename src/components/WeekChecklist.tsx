@@ -4,7 +4,7 @@ import { useStore, type AppState } from '../store';
 import { addDays, DAY_SHORT, dayOfWeek, formatDate, today } from '../lib/dates';
 import { fmtDist, fmtMinutes, fmtPace, uid } from '../lib/format';
 import { runMinutes } from '../lib/plan';
-import { activitiesOf, dayFor, defaultRpe, isDone, isRun, scheduleWarnings } from '../lib/schedule';
+import { activitiesOf, dayFor, defaultRpe, isDone, isFixed, isRun, isSession, scheduleWarnings } from '../lib/schedule';
 import { RouteOptions, StrengthDetails, TypeBadge } from './ui';
 
 /** Updates one workout in the plan. */
@@ -24,14 +24,18 @@ export function useChecklist() {
     const inWeek = t >= weekStart && t < addDays(weekStart, 7);
     const date = dayFor(w) ?? (inWeek ? t : w.date);
     update((s) => {
-      const planPatch = patchWorkout(s, w.id, { scheduled: w.type === 'race' ? undefined : date, done: w.type === 'race' ? true : undefined });
+      const planPatch = patchWorkout(s, w.id, { scheduled: isFixed(w) ? undefined : date, done: isFixed(w) ? true : undefined });
       const paces = s.plan!.paces;
       if (w.type === 'strength') {
         const gym = s.gyms.find((g) => /life ?time/i.test(g.name)) ?? s.gyms[0];
         const log = { id: uid(), date, kind: 'strength' as const, name: w.strength?.title ?? w.title, gymId: gym?.id, plannedId: w.id, durationMin: w.strength?.durationMin ?? 45, rpe: defaultRpe(w), notes: '', source: 'tick' as const };
         return { ...planPatch, activities: [...s.activities, log] };
       }
-      if (isRun(w) && w.type !== 'race') {
+      if (w.type === 'cross') {
+        const log = { id: uid(), date, kind: 'other' as const, name: 'Cross-training', plannedId: w.id, durationMin: w.durationMin ?? 60, rpe: 3, notes: '', source: 'tick' as const };
+        return { ...planPatch, activities: [...s.activities, log] };
+      }
+      if (isRun(w) && !isFixed(w)) {
         const log = { id: uid(), date, workoutId: w.id, distanceKm: w.distanceKm, durationSec: Math.round(runMinutes(w, paces) * 60), rpe: defaultRpe(w), notes: '', source: 'tick' as const };
         return { ...planPatch, logs: [...s.logs, log] };
       }
@@ -40,7 +44,7 @@ export function useChecklist() {
   }
 
   function untick(w: Workout) {
-    const real = w.type === 'strength'
+    const real = isSession(w)
       ? state.activities.filter((a) => a.plannedId === w.id && a.source !== 'tick')
       : state.logs.filter((l) => l.workoutId === w.id && l.source !== 'tick');
     if (real.length && !confirm('This has a logged activity (from the Log tab or your Garmin). Untick it and delete that log too?')) return;
@@ -62,7 +66,8 @@ export function ChecklistItem({ w, week, warnings = [], showDoToday = false }: {
   const done = isDone(w, state.logs, state.activities);
   const day = dayFor(w);
   const isGym = w.type === 'strength' && !!w.strength;
-  const expandable = isGym || (isRun(w) && w.type !== 'race');
+  const isCross = w.type === 'cross';
+  const expandable = isGym || isCross || (isRun(w) && w.type !== 'race');
   const minutes = state.plan ? runMinutes(w, state.plan.paces) : 0;
   const days = Array.from({ length: 7 }, (_, i) => addDays(week.startDate, i));
   const t = today();
@@ -87,7 +92,7 @@ export function ChecklistItem({ w, week, warnings = [], showDoToday = false }: {
         <select
           className={`day-select ${day ? 'set' : ''}`}
           value={day ?? ''}
-          disabled={w.type === 'race'}
+          disabled={isFixed(w)}
           aria-label={`Day for ${w.title}`}
           onChange={(e) => assign(w, e.target.value || undefined)}
         >
@@ -101,10 +106,36 @@ export function ChecklistItem({ w, week, warnings = [], showDoToday = false }: {
       {!day && !done && <div className="check-detail small muted">★ Suggested: {DAY_SHORT[dayOfWeek(w.date)]}</div>}
       {warnings.map((m) => <div key={m} className="check-detail small warn">⚠ {m}</div>)}
       <div className="row check-detail">
-        {expandable && <button className="link small" onClick={() => setOpen(!open)}>{open ? '▴ Hide' : isGym ? '▾ Show exercises' : '▾ Route options'}</button>}
-        {showDoToday && !done && day !== t && w.type !== 'race' && <button className="link small" onClick={() => assign(w, t)}>Do today</button>}
+        {expandable && <button className="link small" onClick={() => setOpen(!open)}>{open ? '▴ Hide' : isGym ? '▾ Show exercises' : isCross ? '▾ Ideas' : '▾ Route options'}</button>}
+        {showDoToday && !done && day !== t && !isFixed(w) && <button className="link small" onClick={() => assign(w, t)}>Do today</button>}
       </div>
-      {open && (isGym ? <StrengthDetails w={w} /> : <RouteOptions w={w} />)}
+      {open && (isGym ? <StrengthDetails w={w} /> : isCross ? <CrossIdeas day={day} /> : <RouteOptions w={w} />)}
+    </div>
+  );
+}
+
+/** Cross-training suggestions: gentle classes from the runner's timetable, then general ideas. */
+function CrossIdeas({ day }: { day?: string }) {
+  const { state } = useStore();
+  const gentle = state.classes.filter((c) => ['spin', 'swim', 'yoga', 'pilates'].includes(c.category) && (!day || c.dayOfWeek === dayOfWeek(day)));
+  const gymName = (id: string) => state.gyms.find((g) => g.id === id)?.name ?? '';
+  return (
+    <div className="route-options">
+      {gentle.length > 0 && (
+        <>
+          <p className="small"><strong>{day ? `On ${DAY_SHORT[dayOfWeek(day)]} from your timetable:` : 'From your timetable:'}</strong></p>
+          <ul className="small">
+            {gentle.slice(0, 5).map((c) => <li key={c.id}>{!day && `${DAY_SHORT[c.dayOfWeek]} `}{c.startTime} {c.name} · {gymName(c.gymId)}</li>)}
+          </ul>
+        </>
+      )}
+      <ul className="small muted">
+        <li>An easy spin class (SoulCycle, CycleBar, AARMY Ride) — keep the resistance light.</li>
+        <li>Swimming or pool running.</li>
+        <li>Yoga or Pilates for mobility.</li>
+        <li>A long walk or an easy bike ride along the Hudson River Greenway.</li>
+      </ul>
+      <p className="small muted">Higdon: cross-training should leave you fresher, not tired. Logging a class on this day ticks it off.</p>
     </div>
   );
 }

@@ -25,7 +25,11 @@ export interface Profile {
   workAddress: string;
   workDays: number[]; // days of week spent at work, 0 = Sunday
   maxHr?: number; // measured max heart rate; estimated from age when missing
+  planStyle?: PlanStyle;
 }
+
+/** 'adaptive' = periodised plan with speed work; 'higdon-novice1' = Higdon-style: Novice 1 structure and similar mileage, all easy running. */
+export type PlanStyle = 'adaptive' | 'higdon-novice1';
 
 export type WorkoutType =
   | 'easy'
@@ -36,6 +40,7 @@ export type WorkoutType =
   | 'marathon-pace'
   | 'race'
   | 'strength'
+  | 'cross'
   | 'rest';
 
 export interface StrengthExercise {
@@ -66,6 +71,7 @@ export interface Workout {
   description: string;
   paceSecPerKm?: number;
   strength?: StrengthSession;
+  durationMin?: number; // for timed, non-running items such as cross-training
   scheduled?: string; // the day the runner assigned it to (YYYY-MM-DD); unset = not assigned yet
   done?: boolean; // ticked off without a matching log (e.g. races)
   movedFrom?: string;
@@ -80,12 +86,14 @@ export interface PlanWeek {
   cutback: boolean;
   workouts: Workout[];
   adaptationNote?: string;
+  intro?: boolean; // a lighter part-week before the plan proper starts (plan begun mid-week)
 }
 
 export interface Plan {
   createdAt: string;
   weeks: PlanWeek[];
   paces: Paces;
+  starterDeclined?: boolean; // runner chose to keep a full first week despite starting mid-week
 }
 
 export interface Paces {

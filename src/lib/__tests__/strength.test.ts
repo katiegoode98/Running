@@ -23,7 +23,9 @@ describe('weekly gym strength session', () => {
     for (const s of strengthDays) {
       expect(Math.min(...longs.map((l) => Math.abs(daysBetween(s.date, l))))).toBeGreaterThanOrEqual(2);
     }
-    expect(new Date(`${strengthDays[0].date}T12:00`).getDay()).toBe(3);
+    // The plan starts on a Thursday, so the starter week's gym day is Thursday; full weeks use Wednesday.
+    const firstFullWeekGym = plan.weeks.find((w) => !w.intro)!.workouts.find((w) => w.type === 'strength')!;
+    expect(new Date(`${firstFullWeekGym.date}T12:00`).getDay()).toBe(3);
   });
 
   it('periodises the session by phase', () => {

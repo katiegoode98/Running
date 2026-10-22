@@ -29,7 +29,7 @@ Everything runs in the browser and it installs on your phone like an app. Your d
 
 The app is an installable web app. It works offline, opens full-screen from your home screen, and uses a bottom tab bar on phones.
 
-1. Deploy it to an HTTPS URL. The free options below all work from a private repo:
+1. Deploy it to an HTTPS URL. **GitHub Pages is free and unlimited for this public repo, so it's the recommended host.** Netlify's free plan charges about 15 credits per production deploy (300 credits a month), so if you use Netlify, set its production branch to `main` and turn off branch deploys and deploy previews. `netlify.toml` already skips builds for commits that don't change the app. Options:
    - **Netlify / Vercel / Cloudflare Pages:** import the GitHub repo, set the build command to `npm run build` and the output directory to `dist`.
    - **GitHub Pages** (free for public repos): in the repo's **Settings → Pages**, set *Source* to **GitHub Actions**. Every push to `main` then deploys to `https://<user>.github.io/Running/`.
 2. On iPhone, open the URL in **Safari** and tap **Share → Add to Home Screen**. On Android, use Chrome's **Install app**.
@@ -58,8 +58,21 @@ On first launch, fill in your goal race, goal time, current fitness and a recent
 | **Calendar** | Google Calendar sync or `.ics` import (iCloud/Outlook). Ranks the best day for long runs and moves workouts around clashes |
 | **Gym** | Your membership details, clubs (mapped via OpenStreetMap) and class timetables. Suggests classes for each training week based on your phase, the runs either side, calendar clashes and travel time from home or work |
 | **Races** | Tracks tune-up races, entry windows, ballots and lotteries, with reminders for the next thing to do. Shows how well each race fits your block, and can put a race into your plan. Race results feed back into your fitness estimate |
+| **Routes** | 13 NYC running routes, including Central Park loops, Harlem Hill, the Hudson and East River paths, the bridges, Prospect Park and the islands. Each shows distance, elevation gain (with the range where sources disagree), terrain, distance from home and tips. Pick a planned run to see how to fit it to each route (laps, turnaround point, or one way and subway home) |
 | **Music** | Builds a Spotify playlist sized to a workout's duration and suggests podcasts and audiobooks for long runs |
 | **Nutrition** | Daily carb, protein and fat targets that change with each day's training (carb-load before the race), a food log, a weight log with a 7-day trend, long-run fuelling advice, and an overview of diet approaches |
+
+## Plan styles
+
+Choose a style in **Profile → Plan style**:
+- **Adaptive (default):** a periodised plan with threshold, interval and marathon-pace sessions, and long runs capped at about 3½ hours.
+- **Higdon-style (default for new profiles):** modelled on [Hal Higdon's free Novice 1 programme](https://www.halhigdon.com/training-programs/marathon-training/novice-1-marathon/), with the same structure and similar mileage, generated from your own starting point and arranged around your long-run day.
+  - **Weekly shape:** a long run, cross-training the next day, a rest day, a short run, a midweek "sorta-long" run (3 → 10 mi), another short run, then a rest day.
+  - **18-week block:** long runs build from where base training left off (6–10 mi) to 20 miles three weeks out, with a step-back about every third week. There's a half marathon in week 8 and a three-week taper.
+  - **No speed work.** All runs are easy and conversational.
+  - **Base weeks before the block** use the same shape at the 15–25 miles a week Higdon recommends.
+  - **Gym:** the app's strength session sits on one of Higdon's rest days and is marked optional.
+  - **Cross-training:** logging a class on that day ticks it off.
 
 ## How the plan adapts
 

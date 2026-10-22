@@ -24,7 +24,7 @@ const CARBS_G_PER_KG: Record<DayLoad, number> = { rest: 3.5, light: 5, moderate:
 export function loadFor(workout: Workout | undefined, minutes: number, daysToRace: number | null): DayLoad {
   if (daysToRace !== null && daysToRace >= 1 && daysToRace <= 2) return 'carb-load';
   if (!workout || workout.type === 'rest') return 'rest';
-  if (workout.type === 'strength') return 'light';
+  if (workout.type === 'strength' || workout.type === 'cross') return 'light';
   if (workout.type === 'long' || workout.type === 'race' || minutes >= 90) return 'high';
   if (workout.type === 'easy' || workout.type === 'recovery') return minutes > 60 ? 'moderate' : 'light';
   return 'moderate';
