@@ -20,13 +20,51 @@ export function fmtPace(secPerKm: number, units: Units): string {
   return `${fmtDuration(s)}/${units}`;
 }
 
-/** Parses "3:45:00", "45:00" or "45" (minutes) into seconds. Returns NaN when invalid. */
+/**
+ * Parses "3:45:00", "45:00" or "45" (minutes) into seconds. Dots, commas and
+ * h/m markers work as separators too ("2.30", "2h30", "45m"). Returns NaN when invalid.
+ */
 export function parseDuration(text: string): number {
-  const parts = text.trim().split(':').map(Number);
-  if (parts.length === 0 || parts.some((p) => Number.isNaN(p))) return NaN;
+  const hasHours = /\d\s*(hours?|hrs?|h)\b|\dh/i.test(text);
+  const normalised = text
+    .trim()
+    .toLowerCase()
+    .replace(/\s*(hours?|hrs?|h)\s*/g, ':')
+    .replace(/\s*(minutes?|mins?|m)\s*/g, ':')
+    .replace(/\s*(seconds?|secs?|s)\s*$/, '')
+    .replace(/[.,'"]/g, ':')
+    .replace(/:+$/, '');
+  if (!normalised) return NaN;
+  const parts = normalised.split(':').map((p) => (p === '' ? NaN : Number(p)));
+  if (parts.length > 3 || parts.some((p) => Number.isNaN(p))) return NaN;
+  if (hasHours && parts.length <= 2) return parts[0] * 3600 + (parts[1] ?? 0) * 60;
   if (parts.length === 1) return parts[0] * 60;
   if (parts.length === 2) return parts[0] * 60 + parts[1];
   return parts[0] * 3600 + parts[1] * 60 + parts[2];
+}
+
+// Elite half/marathon pace is ~2:50/km; walking is ~10–12 min/km.
+const FASTEST_SEC_PER_KM = 155;
+const SLOWEST_SEC_PER_KM = 1200;
+
+export function isPlausibleTime(sec: number, km: number): boolean {
+  if (!(sec > 0) || !(km > 0)) return false;
+  const pace = sec / km;
+  return pace >= FASTEST_SEC_PER_KM && pace <= SLOWEST_SEC_PER_KM;
+}
+
+/**
+ * Parses a time for a known distance. "2:30" or "2.30" for a half marathon is
+ * read as 2 h 30 min rather than 2 min 30 s, because no one runs that fast.
+ * Returns NaN when no reading gives a humanly possible pace.
+ */
+export function parseRaceTime(text: string, km: number): number {
+  const sec = parseDuration(text);
+  if (Number.isNaN(sec)) return NaN;
+  if (isPlausibleTime(sec, km)) return sec;
+  const asHours = sec * 60; // "h:mm" typed where "mm:ss" was assumed, or "h" alone
+  if (text.replace(/[^:.,h]/gi, '').length <= 1 && isPlausibleTime(asHours, km)) return asHours;
+  return NaN;
 }
 
 export function uid(): string {

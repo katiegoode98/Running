@@ -3,7 +3,8 @@ import type { Experience, Profile } from '../types';
 import { Card, Field } from '../components/ui';
 import { useStore } from '../store';
 import { DAY_NAMES, today } from '../lib/dates';
-import { fmtDuration, KM_PER_MI, parseDuration, uid } from '../lib/format';
+import { fmtDuration, isPlausibleTime, KM_PER_MI, parseRaceTime, uid } from '../lib/format';
+import { MARATHON_KM } from '../lib/paces';
 import { generatePlan, peakVolumeKm } from '../lib/plan';
 import { predictedMarathonSec, suggestGoals } from '../lib/paces';
 import { geocode } from '../lib/gym';
@@ -34,9 +35,12 @@ const RACE_DISTANCES: [string, number][] = [['5K', 5], ['10K', 10], ['Half marat
 export function ProfileView({ onDone }: { onDone?: () => void }) {
   const { state, update } = useStore();
   const [p, setP] = useState<Profile>(state.profile ?? DEFAULT);
-  const [goalText, setGoalText] = useState(fmtDuration(p.goalTimeSec));
+  // Times saved before input validation existed may be impossible (e.g. "2.30" read as 2.3 minutes);
+  // show those fields empty so they get re-entered rather than re-saved.
+  const storedRaceOk = !!p.recentRace && isPlausibleTime(p.recentRace.timeSec, p.recentRace.distanceKm);
+  const [goalText, setGoalText] = useState(isPlausibleTime(p.goalTimeSec, MARATHON_KM) ? fmtDuration(p.goalTimeSec) : '');
   const [raceDist, setRaceDist] = useState(p.recentRace?.distanceKm ?? 0);
-  const [raceTime, setRaceTime] = useState(p.recentRace ? fmtDuration(p.recentRace.timeSec) : '');
+  const [raceTime, setRaceTime] = useState(storedRaceOk ? fmtDuration(p.recentRace!.timeSec) : '');
   const [status, setStatus] = useState('');
   const [guaranteed, setGuaranteed] = useState(false);
   const unitFactor = p.units === 'mi' ? KM_PER_MI : 1;
@@ -44,20 +48,26 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((x) => ({ ...x, [k]: v }));
   const num = (v: string) => Number(v) || 0;
 
-  const recentRace = raceDist && parseDuration(raceTime) > 0 ? { distanceKm: raceDist, timeSec: parseDuration(raceTime) } : undefined;
+  const raceSec = raceDist && raceTime.trim() ? parseRaceTime(raceTime, raceDist) : NaN;
+  const raceTimeError = raceDist > 0 && raceTime.trim() !== '' && Number.isNaN(raceSec);
+  const recentRace = raceDist && raceSec > 0 ? { distanceKm: raceDist, timeSec: raceSec } : undefined;
+  const raceNeedsReentry = !!p.recentRace && !storedRaceOk && !raceTime.trim();
   const predicted = recentRace ? predictedMarathonSec(recentRace) : null;
   const goals = recentRace ? suggestGoals(recentRace) : [];
-  const goalSec = parseDuration(goalText);
+  const goalSec = goalText.trim() ? parseRaceTime(goalText, MARATHON_KM) : NaN;
   const tooFast = goals.length > 0 && goalSec > 0 && goalSec < goals[2].timeSec * 0.97;
   const nycNotTracked = p.raceDate === NYC_2027.raceDate && !state.races.some((r) => r.date === NYC_2027.raceDate);
 
   async function save() {
-    const goal = parseDuration(goalText);
-    if (!goal || Number.isNaN(goal)) return setStatus('Enter a goal time like 3:45:00');
+    const goal = goalSec;
+    if (!goal || Number.isNaN(goal)) return setStatus('Enter a goal time like 4:45:00');
+    if (raceTimeError) return setStatus('Check your recent race time — enter it as h:mm:ss, e.g. 2:30:00');
     if (p.raceDate <= today()) return setStatus('Race date must be in the future');
     const profile: Profile = { ...p, goalTimeSec: goal, recentRace };
     const hadPlan = !!state.plan;
-    const regenerate = !hadPlan || confirm('Regenerate your training plan from these settings? Logged runs are kept.');
+    // A plan built from an impossible race time has broken paces — always rebuild it.
+    const brokenPlan = !!state.plan && state.plan.paces.easy < 155;
+    const regenerate = !hadPlan || brokenPlan || confirm('Regenerate your training plan from these settings? Logged runs are kept.');
     setStatus('Saving…');
     const geo = { ...state.geo };
     try {
@@ -85,7 +95,11 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
           <Field label="Your name"><input value={p.name} onChange={(e) => set('name', e.target.value)} /></Field>
           <Field label="Goal marathon"><input value={p.raceName} placeholder="e.g. TCS New York City Marathon" onChange={(e) => set('raceName', e.target.value)} /></Field>
           <Field label="Race date"><input type="date" value={p.raceDate} onChange={(e) => set('raceDate', e.target.value)} /></Field>
-          <Field label="Goal time (h:mm:ss)"><input value={goalText} onChange={(e) => setGoalText(e.target.value)} /></Field>
+          <Field label="Goal time (h:mm:ss)">
+            <input value={goalText} placeholder="e.g. 4:45:00" onChange={(e) => setGoalText(e.target.value)} />
+            {goalText.trim() !== '' && Number.isNaN(goalSec) && <small className="error">Enter the goal as h:mm:ss, e.g. 4:45:00.</small>}
+            {goalSec > 0 && !/^\d+:\d\d:\d\d$/.test(goalText.trim()) && <small className="muted">Read as {fmtDuration(goalSec)}</small>}
+          </Field>
           <Field label="Units">
             <select value={p.units} onChange={(e) => set('units', e.target.value as Profile['units'])}>
               <option value="km">Kilometres</option>
@@ -117,7 +131,10 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
             </select>
           </Field>
           <Field label="Recent race time" hint={predicted ? `Equivalent to a ~${fmtDuration(predicted)} marathon on today's fitness` : 'Used to set training paces'}>
-            <input value={raceTime} placeholder="e.g. 52:30" onChange={(e) => setRaceTime(e.target.value)} />
+            <input value={raceTime} placeholder="h:mm:ss, e.g. 2:30:00" onChange={(e) => setRaceTime(e.target.value)} />
+            {raceTimeError && <small className="error">That isn't a possible time for this distance — use h:mm:ss, e.g. 2:30:00.</small>}
+            {raceNeedsReentry && <small className="error">Your saved race time was misread — please enter it again.</small>}
+            {recentRace && raceTime.trim() && !/^\d+:\d\d:\d\d$/.test(raceTime.trim()) && <small className="muted">Read as {fmtDuration(recentRace.timeSec)}</small>}
           </Field>
           <Field label="Run days per week">
             <select value={p.runDaysPerWeek} onChange={(e) => set('runDaysPerWeek', Number(e.target.value) as Profile['runDaysPerWeek'])}>
@@ -143,7 +160,7 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
           </div>
         )}
         {tooFast && <p className="error small">Your goal is much faster than your race times suggest. Marathon-pace sessions use goal pace, so they'd be too hard — consider the Realistic goal and revisit after a spring race.</p>}
-        <p className="muted small">Peak week will be about {Math.round(peakVolumeKm({ ...p, goalTimeSec: parseDuration(goalText) || p.goalTimeSec }) / unitFactor)} {p.units}.</p>
+        <p className="muted small">Peak week will be about {Math.round(peakVolumeKm({ ...p, goalTimeSec: (goalSec || p.goalTimeSec) }) / unitFactor)} {p.units}.</p>
       </Card>
 
       <Card title="You & your week">
