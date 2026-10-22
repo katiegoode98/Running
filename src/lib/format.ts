@@ -15,6 +15,12 @@ export function fmtDuration(sec: number): string {
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
 }
 
+/** "45 min" or "1 h 05 min", rounded to the nearest 5 minutes. */
+export function fmtMinutes(min: number): string {
+  const m = Math.max(5, Math.round(min / 5) * 5);
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
+}
+
 export function fmtPace(secPerKm: number, units: Units): string {
   const s = units === 'mi' ? secPerKm * KM_PER_MI : secPerKm;
   return `${fmtDuration(s)}/${units}`;

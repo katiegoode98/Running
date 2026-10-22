@@ -265,6 +265,19 @@ export function weekActualKm(week: PlanWeek, logs: { date: string; distanceKm: n
   return logs.filter((l) => l.date >= week.startDate && l.date < end).reduce((s, l) => s + l.distanceKm, 0);
 }
 
+/**
+ * Estimated running time in minutes. Quality sessions mix the target pace with
+ * warm-up, cool-down and recoveries at easy pace, so ~60% of the distance is
+ * counted at the target pace and the rest at easy pace.
+ */
+export function runMinutes(w: Workout, paces: Paces): number {
+  if (w.type === 'rest' || w.distanceKm === 0) return 0;
+  const pace = w.paceSecPerKm ?? paces.easy;
+  const mixed = w.type === 'tempo' || w.type === 'intervals' || w.type === 'marathon-pace';
+  const avgPace = mixed ? 0.6 * pace + 0.4 * paces.easy : pace;
+  return (w.distanceKm * avgPace) / 60;
+}
+
 export function isHard(type: WorkoutType): boolean {
   return type === 'long' || type === 'tempo' || type === 'intervals' || type === 'marathon-pace' || type === 'race';
 }

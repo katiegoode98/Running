@@ -2,8 +2,7 @@ import { Card, Empty, WorkoutLine } from '../components/ui';
 import { useStore } from '../store';
 import { daysBetween, mondayOf, today } from '../lib/dates';
 import { fmtDist } from '../lib/format';
-import { weekActualKm, workoutOn } from '../lib/plan';
-import { minutesNeeded } from '../lib/calendar';
+import { runMinutes, weekActualKm, workoutOn } from '../lib/plan';
 import { dailyTargets } from '../lib/nutrition';
 import { nextAction } from '../lib/races';
 import { audioAdvice } from '../lib/media';
@@ -19,7 +18,7 @@ export function TodayView({ onLog }: { onLog?: () => void }) {
   const daysToRace = daysBetween(t, profile.raceDate);
   const week = plan.weeks.find((w) => w.startDate === mondayOf(t));
   const todays = workoutOn(plan, t);
-  const minutes = todays ? minutesNeeded(todays, plan.paces) - 30 : 0;
+  const minutes = todays ? runMinutes(todays, plan.paces) : 0;
   const targets = dailyTargets(profile, todays, minutes, daysToRace);
   const actions = state.races.map((r) => nextAction(r, t)).filter((a) => a.urgency === 'urgent' || a.urgency === 'overdue' || a.urgency === 'soon');
   const u = profile.units;

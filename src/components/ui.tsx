@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import type { Workout, WorkoutType } from '../types';
 import { formatDate } from '../lib/dates';
-import { fmtDist, fmtPace } from '../lib/format';
+import { fmtDist, fmtMinutes, fmtPace } from '../lib/format';
+import { runMinutes } from '../lib/plan';
 import { useStore } from '../store';
 
 export function Card({ title, children, actions }: { title?: ReactNode; children: ReactNode; actions?: ReactNode }) {
@@ -52,7 +53,12 @@ export function WorkoutLine({ w, done }: { w: Workout; done?: number }) {
       <TypeBadge type={w.type} />
       <div className="workout-body">
         <strong>{w.title}</strong>
-        {w.distanceKm > 0 && <span className="muted"> · {fmtDist(w.distanceKm, units)}{w.paceSecPerKm ? ` @ ${fmtPace(w.paceSecPerKm, units)}` : ''}</span>}
+        {w.distanceKm > 0 && (
+          <span className="muted">
+            {' '}· {fmtDist(w.distanceKm, units)}{w.paceSecPerKm ? ` @ ${fmtPace(w.paceSecPerKm, units)}` : ''}
+            {state.plan && <> · <span className="duration">~{fmtMinutes(runMinutes(w, state.plan.paces))}</span></>}
+          </span>
+        )}
         {w.movedFrom && <span className="pill">moved from {formatDate(w.movedFrom)}</span>}
         {done !== undefined && done > 0 && <span className="pill ok">✓ {fmtDist(done, units)}</span>}
         <div className="muted small">{w.description}</div>

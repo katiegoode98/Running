@@ -46,3 +46,23 @@ describe('parseRaceTime', () => {
     expect(paces.tempo).toBeGreaterThan(6 * 60);
   });
 });
+
+describe('workout durations', () => {
+  it('formats minutes to the nearest 5', async () => {
+    const { fmtMinutes } = await import('../format');
+    expect(fmtMinutes(43)).toBe('45 min');
+    expect(fmtMinutes(124)).toBe('2 h 05 min');
+    expect(fmtMinutes(2)).toBe('5 min');
+  });
+
+  it('estimates easy runs at their pace and quality sessions with easy warm-up/recoveries', async () => {
+    const { runMinutes } = await import('../plan');
+    const paces = { recovery: 578, easy: 534, long: 498, marathon: 427, tempo: 418, interval: 400 };
+    const base = { id: 'x', date: '2026-11-01', title: '', description: '' };
+    expect(runMinutes({ ...base, type: 'long', distanceKm: 12, paceSecPerKm: 498 }, paces)).toBeCloseTo(99.6, 1);
+    const tempo = runMinutes({ ...base, type: 'tempo', distanceKm: 8, paceSecPerKm: 418 }, paces);
+    expect(tempo).toBeGreaterThan((8 * 418) / 60);
+    expect(tempo).toBeLessThan((8 * 534) / 60);
+    expect(runMinutes({ ...base, type: 'rest', distanceKm: 0 }, paces)).toBe(0);
+  });
+});
