@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Card, Empty, Field } from '../components/ui';
 import { useStore } from '../store';
 import { formatDate, today } from '../lib/dates';
-import { fmtDist, fmtDuration, fmtPace, KM_PER_MI, parseDuration, uid } from '../lib/format';
+import { fmtDist, fmtDuration, fmtPace, KM_PER_MI, parseRaceTime, uid } from '../lib/format';
 import { workoutOn } from '../lib/plan';
 import { adaptPlan, assess, type Performance } from '../lib/adapt';
 import { DISTANCE_KM } from '../lib/races';
@@ -56,8 +56,9 @@ export function LogView() {
 
   function add() {
     const km = Number(dist) * f;
-    const sec = parseDuration(time);
-    if (!km || !sec) return setErr('Enter distance and time (e.g. 52:30).');
+    if (!km) return setErr('Enter the distance.');
+    const sec = parseRaceTime(time, km);
+    if (!sec) return setErr('Enter a time that fits the distance — mm:ss or h:mm:ss, e.g. 52:30 or 1:05:00.');
     update((s) => ({ logs: [...s.logs, { id: uid(), date, workoutId: planned?.id, distanceKm: km, durationSec: sec, rpe, notes, pain }] }));
     setDist(''); setTime(''); setNotes(''); setPain(false); setErr('');
   }

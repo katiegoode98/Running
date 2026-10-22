@@ -40,6 +40,9 @@ export function App() {
     window.scrollTo(0, 0);
   };
 
+  // Plans saved before race times were validated can have impossible paces (seconds per km).
+  const pacesBroken = !!state.plan && state.plan.paces.easy < 155;
+
   useEffect(() => {
     if (state.settings.spotifyClientId) completeSpotifyLogin(state.settings.spotifyClientId).catch((e) => alert(e.message));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -82,6 +85,13 @@ export function App() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+      {pacesBroken && tab !== 'profile' && (
+        <div className="card note-card">
+          <strong>Your training paces are wrong.</strong> Your recent race time was misread when it was saved (for example "2.30" read as 2.3 minutes).
+          Re-enter it as h:mm:ss in your profile and the plan will be rebuilt.
+          <button className="primary block" onClick={() => setTab('profile')}>Fix in Profile</button>
         </div>
       )}
       {tab === 'today' && <TodayView onLog={() => setTab('log')} />}

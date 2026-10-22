@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, Empty, Field } from '../components/ui';
 import { useStore } from '../store';
 import { formatDate, mondayOf, today } from '../lib/dates';
-import { fmtDuration, parseDuration, uid } from '../lib/format';
+import { fmtDuration, parseDuration, parseRaceTime, uid } from '../lib/format';
 import { DISTANCE_KM, DISTANCE_LABEL, nextAction, RACE_DIRECTORIES, raceFit, raceSearchUrl } from '../lib/races';
 import { NINE_PLUS_ONE_TODOS, NYC_2027, nycEntryRoutes, nycSeedRaces } from '../lib/presets';
 import type { EntryType, Race, RaceDistance, RaceStatus } from '../types';
@@ -36,8 +36,10 @@ export function RacesView() {
   }
 
   function saveResult(r: Race) {
-    const sec = parseDuration(resultText[r.id] ?? '');
-    if (!sec) return;
+    const text = resultText[r.id] ?? '';
+    const km = DISTANCE_KM[r.distance];
+    const sec = km > 0 ? parseRaceTime(text, km) : parseDuration(text);
+    if (!sec) return alert('Enter your result as h:mm:ss, e.g. 2:30:00.');
     update((s) => ({ races: s.races.map((x) => (x.id === r.id ? { ...x, status: 'completed', resultTimeSec: sec } : x)) }));
   }
 
