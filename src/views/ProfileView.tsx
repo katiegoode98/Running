@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Experience, Profile } from '../types';
+import type { Experience, Profile, PlanStyle } from '../types';
 import { Card, Field } from '../components/ui';
 import { useStore } from '../store';
 import { DAY_NAMES, today } from '../lib/dates';
@@ -11,6 +11,7 @@ import { predictedMarathonSec, suggestGoals } from '../lib/paces';
 import { geocode } from '../lib/gym';
 import { NYC_2027, nycSeedRaces } from '../lib/presets';
 import { carryOver } from '../lib/schedule';
+import { HIGDON_URL } from '../lib/higdon';
 
 const DEFAULT: Profile = {
   name: '',
@@ -115,7 +116,22 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
               <option value="advanced">Experienced / chasing a PB</option>
             </select>
           </Field>
+          <Field label="Plan style">
+            <select value={p.planStyle ?? 'adaptive'} onChange={(e) => set('planStyle', e.target.value as PlanStyle)}>
+              <option value="adaptive">Adaptive (speed work, periodised)</option>
+              <option value="higdon-novice1">Hal Higdon Novice 1</option>
+            </select>
+          </Field>
         </div>
+        {p.planStyle === 'higdon-novice1' ? (
+          <p className="muted small">
+            Follows <a href={HIGDON_URL} target="_blank" rel="noreferrer">Hal Higdon's Novice 1</a>: four easy runs a week (two short runs, a midweek
+            "sorta-long" run and the weekend long run building to 20 miles), cross-training the day after the long run, a half marathon in week 8
+            and a three-week taper. No speed work. Higdon publishes it in miles — switch Units to miles to match his numbers exactly.
+          </p>
+        ) : (
+          <p className="muted small">The adaptive plan adds threshold, interval and marathon-pace sessions and caps long runs at about 3½ hours.</p>
+        )}
       </Card>
 
       <Card title="Current fitness">
@@ -138,8 +154,8 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
             {raceNeedsReentry && <small className="error">Your saved race time was misread — please enter it again.</small>}
             {recentRace && raceTime.trim() && !/^\d+:\d\d:\d\d$/.test(raceTime.trim()) && <small className="muted">Read as {fmtDuration(recentRace.timeSec)}</small>}
           </Field>
-          <Field label="Run days per week">
-            <select value={p.runDaysPerWeek} onChange={(e) => set('runDaysPerWeek', Number(e.target.value) as Profile['runDaysPerWeek'])}>
+          <Field label="Run days per week" hint={p.planStyle === 'higdon-novice1' ? 'Higdon Novice 1 always has 4 runs a week' : undefined}>
+            <select value={p.planStyle === 'higdon-novice1' ? 4 : p.runDaysPerWeek} disabled={p.planStyle === 'higdon-novice1'} onChange={(e) => set('runDaysPerWeek', Number(e.target.value) as Profile['runDaysPerWeek'])}>
               {[3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </Field>

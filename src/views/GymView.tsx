@@ -7,7 +7,7 @@ import { directionsUrl, geocode, parseTimetable, pickWeeklyClasses, scoreClasses
 import { useBusyEvents } from './CalendarView';
 import type { ClassCategory, GymClass, GymMembership } from '../types';
 import { classLog, withLinkedLogs } from './LogView';
-import { matchGym } from '../lib/schedule';
+import { matchCross, matchGym } from '../lib/schedule';
 import { WELLHUB_GOLD } from '../lib/presets';
 import { BRANDS, classFromTemplate, NEARBY_STUDIOS, templatesFor } from '../lib/studios';
 
@@ -62,7 +62,7 @@ export function GymView() {
     return !!c && state.activities.some((a) => a.date === date && a.name === c.name);
   };
   function logClass(c: GymClass, date: string) {
-    const planned = c.category === 'strength' ? matchGym(plan, state.activities, date) : undefined;
+    const planned = c.category === 'strength' ? matchGym(plan, state.activities, date) : matchCross(plan, state.activities, date);
     update((st) => withLinkedLogs(st, [], [classLog({ date, kind: c.category, name: c.name, gymId: c.gymId, durationMin: c.durationMin, rpe: c.runningLoad ? 8 : c.category === 'yoga' ? 3 : 6, plannedId: planned?.id })]));
   }
 

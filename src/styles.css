@@ -227,3 +227,4 @@ label.button.primary { background: var(--accent); color: white; border-color: va
 @media (max-width: 700px) {
   .day-select { font-size: 16px; max-width: 118px; }
 }
+.t-cross { background: #f3f0ff; color: #5f3dc4; }

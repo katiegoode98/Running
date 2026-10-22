@@ -4,7 +4,7 @@ import { Card, Empty, Field } from '../components/ui';
 import { useStore } from '../store';
 import { formatDate, today } from '../lib/dates';
 import { fmtDist, fmtDuration, fmtMinutes, fmtPace, KM_PER_MI, parseRaceTime, uid } from '../lib/format';
-import { matchGym, matchRun } from '../lib/schedule';
+import { matchCross, matchGym, matchRun } from '../lib/schedule';
 import type { AppState } from '../store';
 import { adaptPlan, assess, type Performance } from '../lib/adapt';
 import { DISTANCE_KM } from '../lib/races';
@@ -161,7 +161,7 @@ function ClassForm() {
     const durationMin = Number(mins);
     const label = name.trim() || (gymDay && kind === 'strength' ? gymDay.title.replace(/^Gym: /, '') : KIND_LABEL[kind]);
     if (!durationMin) return setMsg('Enter how long it lasted.');
-    const plannedId = gymDay && kind === 'strength' ? gymDay.id : undefined;
+    const plannedId = kind === 'strength' ? gymDay?.id : matchCross(state.plan, state.activities, date)?.id;
     update((s) => withLinkedLogs(s, [], [classLog({ date, kind, name: label, gymId: gymId || undefined, plannedId, durationMin, rpe, notes, avgHr: Number(hr) || undefined, source: 'manual' })]));
     setMsg(`Logged ${label}.`);
     setName(''); setNotes(''); setHr(''); setClassId('');
@@ -260,7 +260,7 @@ function GarminImport({ onDone }: { onDone: () => void }) {
     });
     const matchedActs: ActivityLog[] = [...state.activities];
     const acts: ActivityLog[] = keep.filter((p) => p.sport !== 'run').map((p) => {
-      const w = p.kind === 'strength' ? matchGym(state.plan, matchedActs, p.date) : undefined;
+      const w = p.kind === 'strength' ? matchGym(state.plan, matchedActs, p.date) : matchCross(state.plan, matchedActs, p.date);
       const log = classLog({ date: p.date, kind: p.kind, name: p.name, durationMin: Math.round(p.durationSec / 60), rpe: p.rpe, avgHr: p.avgHr, source: 'garmin', externalId: p.externalId, plannedId: w?.id });
       matchedActs.push(log);
       return log;

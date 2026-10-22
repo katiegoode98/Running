@@ -25,7 +25,11 @@ export interface Profile {
   workAddress: string;
   workDays: number[]; // days of week spent at work, 0 = Sunday
   maxHr?: number; // measured max heart rate; estimated from age when missing
+  planStyle?: PlanStyle;
 }
+
+/** 'adaptive' = the app's own periodised plan; 'higdon-novice1' = Hal Higdon's Novice 1 structure. */
+export type PlanStyle = 'adaptive' | 'higdon-novice1';
 
 export type WorkoutType =
   | 'easy'
@@ -36,6 +40,7 @@ export type WorkoutType =
   | 'marathon-pace'
   | 'race'
   | 'strength'
+  | 'cross'
   | 'rest';
 
 export interface StrengthExercise {
@@ -66,6 +71,7 @@ export interface Workout {
   description: string;
   paceSecPerKm?: number;
   strength?: StrengthSession;
+  durationMin?: number; // for timed, non-running items such as cross-training
   scheduled?: string; // the day the runner assigned it to (YYYY-MM-DD); unset = not assigned yet
   done?: boolean; // ticked off without a matching log (e.g. races)
   movedFrom?: string;

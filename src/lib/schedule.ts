@@ -11,14 +11,20 @@ import { rescheduleWeek, type Move } from './calendar';
  * ticked without one.
  */
 
-export const isRun = (w: Workout) => w.distanceKm > 0 && w.type !== 'rest' && w.type !== 'strength';
+export const isRun = (w: Workout) => w.distanceKm > 0 && w.type !== 'rest' && w.type !== 'strength' && w.type !== 'cross';
+
+/** Timed non-running items (gym strength, cross-training) are completed by activity logs. */
+export const isSession = (w: Workout) => w.type === 'strength' || w.type === 'cross';
+
+/** Races are fixed to their date unless they're a movable tune-up (e.g. Higdon's week-8 half). */
+export const isFixed = (w: Workout) => w.type === 'race' && w.distanceKm >= 42;
 
 /** The day an activity will happen: races are fixed, everything else is the runner's choice. */
 export function dayFor(w: Workout): string | undefined {
-  return w.type === 'race' ? w.date : w.scheduled;
+  return w.type === 'race' ? w.scheduled ?? w.date : w.scheduled;
 }
 
-const PRIORITY: Record<string, number> = { race: 0, long: 1, 'marathon-pace': 2, tempo: 2, intervals: 2, easy: 3, recovery: 4, strength: 5 };
+const PRIORITY: Record<string, number> = { race: 0, long: 1, 'marathon-pace': 2, tempo: 2, intervals: 2, easy: 3, recovery: 4, strength: 5, cross: 6 };
 
 /** The week's to-do list: everything except rest days, most important first. */
 export function activitiesOf(week: PlanWeek): Workout[] {
@@ -29,7 +35,7 @@ export function activitiesOf(week: PlanWeek): Workout[] {
 
 export function isDone(w: Workout, logs: RunLog[], activities: ActivityLog[]): boolean {
   if (w.done) return true;
-  if (w.type === 'strength') return activities.some((a) => a.plannedId === w.id);
+  if (isSession(w)) return activities.some((a) => a.plannedId === w.id);
   return logs.some((l) => l.workoutId === w.id);
 }
 
@@ -69,6 +75,14 @@ export function matchGym(plan: Plan | null, activities: ActivityLog[], date: str
   return open.find((w) => dayFor(w) === date) ?? open.find((w) => !dayFor(w));
 }
 
+/** The cross-training item a logged class (cycling, swim, yoga…) completes. */
+export function matchCross(plan: Plan | null, activities: ActivityLog[], date: string): Workout | undefined {
+  const week = weekOf(plan, date);
+  if (!week) return undefined;
+  const open = activitiesOf(week).filter((w) => w.type === 'cross' && !activities.some((a) => a.plannedId === w.id && a.source !== 'tick') && !w.done);
+  return open.find((w) => dayFor(w) === date) ?? open.find((w) => !dayFor(w));
+}
+
 /** Training-rule warnings for the days the runner has chosen, keyed by workout id. */
 export function scheduleWarnings(week: PlanWeek): Map<string, string[]> {
   const out = new Map<string, string[]>();
@@ -98,7 +112,7 @@ export function suggestDays(week: PlanWeek, events: CalendarEvent[], paces: Pace
   const suggested = new Map(arranged.workouts.map((w) => [w.id, w.date]));
   const taken = new Set(activitiesOf(week).map(dayFor).filter(Boolean));
   const workouts = week.workouts.map((w) => {
-    if (w.type === 'rest' || w.type === 'race' || w.scheduled) return w;
+    if (w.type === 'rest' || isFixed(w) || w.scheduled) return w;
     const d = suggested.get(w.id) ?? w.date;
     if (taken.has(d) && isRun(w)) return w; // keep unassigned rather than double-book a run day
     taken.add(d);

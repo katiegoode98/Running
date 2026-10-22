@@ -7,6 +7,7 @@ import { addDays, formatDate, mondayOf, today } from '../lib/dates';
 import { fmtDist, fmtMinutes, fmtPace } from '../lib/format';
 import { runMinutes, weekActualKm, weekLabel } from '../lib/plan';
 import { StarterWeekOffer } from '../components/StarterWeekOffer';
+import { HIGDON_URL } from '../lib/higdon';
 import { workoutsToIcs } from '../lib/calendar';
 import { googleConnected, pushWorkoutsToGoogle } from '../lib/google';
 import type { Paces, Phase, Plan, PlanWeek, Workout } from '../types';
@@ -90,6 +91,12 @@ export function PlanView() {
           </>
         }
       >
+        {profile.planStyle === 'higdon-novice1' && (
+          <p className="note small">
+            Following <a href={HIGDON_URL} target="_blank" rel="noreferrer">Hal Higdon's Novice 1</a>: all runs easy and conversational —
+            the paces below are a guide, not targets.
+          </p>
+        )}
         <div className="paces">
           {(['recovery', 'easy', 'long', 'marathon', 'tempo', 'interval'] as const).map((k) => (
             <div key={k}><span className="muted small">{k}</span><strong>{fmtPace(plan.paces[k], u)}</strong></div>

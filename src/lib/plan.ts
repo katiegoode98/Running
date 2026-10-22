@@ -3,6 +3,7 @@ import { addDays, dayOfWeek, daysBetween, formatDate, mondayOf } from './dates';
 import { fmtDist, fmtPace } from './format';
 import { computePaces, MARATHON_KM } from './paces';
 import { strengthSessionFor, strengthWorkout, withStrengthDays } from './strength';
+import { generateHigdonWeeks } from './higdon';
 
 /*
  * Plan generator.
@@ -80,6 +81,20 @@ export function generatePlan(profile: Profile, opts: GenerateOptions): Plan {
 
 function generateWeeks(profile: Profile, opts: GenerateOptions): Plan {
   const paces = opts.paces ?? computePaces(profile.goalTimeSec, profile.recentRace);
+  if (profile.planStyle === 'higdon-novice1') {
+    const weeks = generateHigdonWeeks(profile, paces, opts.startDate, opts.firstIndex ?? 0);
+    const plan = withStrengthDays({ createdAt: new Date().toISOString(), weeks, paces }, profile.raceDate);
+    // Higdon's schedule has no gym day; the strength session sits on one of his rest days as an optional extra.
+    return {
+      ...plan,
+      weeks: plan.weeks.map((w) => ({
+        ...w,
+        workouts: w.workouts.map((x) => (x.type === 'strength'
+          ? { ...x, title: `${x.title} (optional)`, description: `Optional — a rest day in Higdon's plan. ${x.description}` }
+          : x)),
+      })),
+    };
+  }
   const start = mondayOf(opts.startDate);
   const raceMonday = mondayOf(profile.raceDate);
   const total = Math.max(1, Math.floor(daysBetween(start, raceMonday) / 7) + 1);
@@ -347,6 +362,7 @@ export function weekActualKm(week: PlanWeek, logs: { date: string; distanceKm: n
  */
 export function runMinutes(w: Workout, paces: Paces): number {
   if (w.type === 'strength') return w.strength?.durationMin ?? 45;
+  if (w.type === 'cross') return w.durationMin ?? 60;
   if (w.type === 'rest' || w.distanceKm === 0) return 0;
   const pace = w.paceSecPerKm ?? paces.easy;
   const mixed = w.type === 'tempo' || w.type === 'intervals' || w.type === 'marathon-pace';

@@ -124,7 +124,7 @@ export function adaptPlan(plan: Plan, profile: Profile, logs: RunLog[], a: Asses
     const base = plannedNext?.targetKm ?? future[0].targetKm;
     const w = future[0];
     w.workouts = w.workouts.map((x) => {
-      if (x.type === 'rest' || x.type === 'race' || x.type === 'strength') return x;
+      if (x.type === 'rest' || x.type === 'race' || x.type === 'strength' || x.type === 'cross') return x;
       const distanceKm = Math.round(x.distanceKm * factor * 2) / 2;
       if (a.recommendation === 'injury' && x.type !== 'easy' && x.type !== 'recovery') {
         return { ...x, type: 'easy', distanceKm: Math.min(distanceKm, 8), title: 'Easy run (adapted)', description: 'Quality session replaced with easy running while you recover. Stop if pain returns.', paceSecPerKm: paces.easy };
