@@ -2,6 +2,7 @@ import type { Paces, Plan, Profile, RunLog } from '../types';
 import { addDays, mondayOf } from './dates';
 import { computePaces, MARATHON_KM, riegel } from './paces';
 import { generatePlan, weekActualKm } from './plan';
+import { carryOver } from './schedule';
 
 export interface Performance {
   date: string;
@@ -137,7 +138,7 @@ export function adaptPlan(plan: Plan, profile: Profile, logs: RunLog[], a: Asses
     future[0].adaptationNote = a.notes[0];
   }
 
-  return { createdAt: plan.createdAt, paces, weeks: [...kept, ...future] };
+  return carryOver(plan, { createdAt: plan.createdAt, paces, weeks: [...kept, ...future] });
 }
 
 function lastLongPlanned(plan: Plan, before: string): number | undefined {

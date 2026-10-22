@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Card, Empty } from '../components/ui';
 import { useStore } from '../store';
 import { addDays, DAY_NAMES, daysBetween, formatDate, mondayOf, today } from '../lib/dates';
-import { parseIcs, rankLongRunDays, rescheduleWeek, workHourEvents, type Move } from '../lib/calendar';
+import { fits, parseIcs, rankLongRunDays, workHourEvents, type Move } from '../lib/calendar';
+import { suggestDays } from '../lib/schedule';
 import { connectGoogle, fetchGoogleEvents, googleConnected } from '../lib/google';
 import { adaptPlan, type Assessment } from '../lib/adapt';
 import type { CalendarEvent } from '../types';
@@ -22,6 +23,7 @@ export function CalendarView() {
   const busy = useBusyEvents();
   const [msg, setMsg] = useState('');
   const [moves, setMoves] = useState<Move[]>([]);
+  const [clashes, setClashes] = useState<string[]>([]);
   if (!profile || !plan) return <Empty>Create your profile first.</Empty>;
   const horizon = Math.max(30, daysBetween(today(), profile.raceDate) + 1);
 
@@ -45,18 +47,29 @@ export function CalendarView() {
     setMsg(`Imported ${events.length} events from ${file.name}.`);
   }
 
-  function reschedule() {
+  /** Picks days for unassigned activities in the next four weeks and flags clashes on days already chosen. */
+  function suggestAround() {
     const from = mondayOf(today());
+    const until = addDays(from, 28);
     const all: Move[] = [];
+    const clashes: string[] = [];
+    let assigned = 0;
     const weeks = plan!.weeks.map((w) => {
-      if (w.startDate < from) return w;
-      const r = rescheduleWeek(w, busy, plan!.paces);
+      if (w.startDate < from || w.startDate >= until) return w;
+      for (const x of w.workouts) {
+        if (x.scheduled && x.scheduled >= today() && !fits(x, x.scheduled, busy, plan!.paces)) {
+          clashes.push(`${x.title} on ${formatDate(x.scheduled)} clashes with your calendar — pick another day.`);
+        }
+      }
+      const r = suggestDays(w, busy, plan!.paces);
+      assigned += r.week.workouts.filter((x, i) => x.scheduled && !w.workouts[i].scheduled).length;
       all.push(...r.moves);
       return r.week;
     });
     update({ plan: { ...plan!, weeks } });
     setMoves(all);
-    setMsg(all.length ? `Checked every week to race day: ${all.filter((m) => m.to).length} workouts moved, ${all.filter((m) => !m.to).length} need attention.` : 'No clashes found — your plan already fits your calendar.');
+    setClashes(clashes);
+    setMsg(`Assigned ${assigned} activit${assigned === 1 ? 'y' : 'ies'} over the next 4 weeks.${all.length ? ` ${all.filter((m) => m.to).length} moved off busy days.` : ''}`);
   }
 
   function chooseLongRunDay(dow: number) {
@@ -99,8 +112,9 @@ export function CalendarView() {
       </Card>
 
       <Card title="Fit workouts around events">
-        <p className="muted small">Moves any workout that doesn't have a long-enough free window to another day that week — swapping with rest or easy days and never putting two hard sessions back to back.</p>
-        <button className="primary" onClick={reschedule}>Reschedule plan around my calendar</button>
+        <p className="muted small">Picks days for activities you haven't assigned in the next 4 weeks, avoiding days without a long-enough free window and never putting two hard sessions back to back. Days you've chosen yourself are kept — clashes on them are listed so you can move them.</p>
+        <button className="primary" onClick={suggestAround}>Suggest days around my calendar</button>
+        {clashes.map((c) => <p key={c} className="u-urgent small">⚠ {c}</p>)}
         {moves.map((m, i) => (
           <p key={i} className={m.to ? '' : 'u-urgent'}>
             {m.workout.title}: {formatDate(m.from)} → {m.to ? formatDate(m.to) : '—'} <span className="muted small">({m.reason})</span>

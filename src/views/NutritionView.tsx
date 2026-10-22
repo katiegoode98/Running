@@ -3,7 +3,8 @@ import { Card, Empty, Field } from '../components/ui';
 import { useStore } from '../store';
 import { addDays, daysBetween, formatDate, today } from '../lib/dates';
 import { uid } from '../lib/format';
-import { runMinutes, workoutOn } from '../lib/plan';
+import { runMinutes } from '../lib/plan';
+import { dayFor, workoutOn } from '../lib/schedule';
 import { dailyTargets, DIET_APPROACHES, fuelPlan, movingAverage } from '../lib/nutrition';
 import type { FoodLog } from '../types';
 
@@ -42,7 +43,7 @@ export function NutritionView() {
   const targets = dailyTargets(profile, w, minutes, daysBetween(date, profile.raceDate));
   const eaten = state.foods.filter((f) => f.date === date);
   const sum = (k: 'kcal' | 'carbsG' | 'proteinG' | 'fatG') => eaten.reduce((s, f) => s + f[k], 0);
-  const nextLong = plan.weeks.flatMap((x) => x.workouts).find((x) => x.date >= today() && (x.type === 'long' || x.type === 'race'));
+  const nextLong = plan.weeks.flatMap((x) => x.workouts).find((x) => (dayFor(x) ?? x.date) >= today() && (x.type === 'long' || x.type === 'race'));
   const longMin = nextLong ? runMinutes(nextLong, plan.paces) : 0;
   const fuel = fuelPlan(longMin, profile.weightKg);
   const num = (v: string) => Number(v) || 0;
@@ -115,7 +116,7 @@ export function NutritionView() {
       </Card>
 
       {nextLong && (
-        <Card title={`Fuelling: ${nextLong.title} (${formatDate(nextLong.date)})`}>
+        <Card title={`Fuelling: ${nextLong.title} (${formatDate(dayFor(nextLong) ?? nextLong.date)})`}>
           <p><strong>Before:</strong> {fuel.preRun}</p>
           <p><strong>During:</strong> {fuel.during}</p>
           <p><strong>Fluids:</strong> {fuel.fluids}</p>

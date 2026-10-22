@@ -1,12 +1,15 @@
-import { Fragment, useState } from 'react';
-import { Card, Empty, WorkoutLine } from '../components/ui';
+import { useState } from 'react';
+import { Card, Empty } from '../components/ui';
+import { WeekChecklist, weekProgress } from '../components/WeekChecklist';
+import { useBusyEvents } from './CalendarView';
 import { useStore } from '../store';
 import { addDays, formatDate, mondayOf, today } from '../lib/dates';
 import { fmtDist, fmtMinutes, fmtPace } from '../lib/format';
 import { runMinutes, weekActualKm } from '../lib/plan';
 import { workoutsToIcs } from '../lib/calendar';
 import { googleConnected, pushWorkoutsToGoogle } from '../lib/google';
-import type { Paces, Phase, Workout } from '../types';
+import type { Paces, Phase, Plan, PlanWeek, Workout } from '../types';
+import { activitiesOf, dayFor, isDone, suggestDays } from '../lib/schedule';
 
 const PHASE_INFO: Record<Phase, string> = {
   foundation: 'Foundation: steady volume, strength work and tune-up races. Long runs stay at half-marathon distance until the marathon block starts.',
@@ -23,8 +26,17 @@ export function workoutLabel(w: Workout, units: 'km' | 'mi', paces?: Paces): str
   return `🏃 ${w.title} – ${fmtDist(w.distanceKm, units)}${time}`;
 }
 
+/** Assigned activities on or after a date, dated to the day the runner chose (for calendar exports). */
+function assignedWorkouts(plan: Plan, from: string): Workout[] {
+  return plan.weeks.flatMap((w) => w.workouts).flatMap((w) => {
+    const d = dayFor(w);
+    return d && d >= from ? [{ ...w, date: d }] : [];
+  });
+}
+
 export function PlanView() {
-  const { state } = useStore();
+  const { state, update } = useStore();
+  const busy = useBusyEvents();
   const { plan, profile, logs } = state;
   const [showPast, setShowPast] = useState(false);
   const [msg, setMsg] = useState('');
@@ -33,10 +45,18 @@ export function PlanView() {
   const thisMonday = mondayOf(today());
   const weeks = plan.weeks.filter((w) => showPast || w.startDate >= thisMonday);
   const u = profile.units;
-  const doneOn = (date: string) => logs.filter((l) => l.date === date).reduce((s, l) => s + l.distanceKm, 0);
+
+  // Fills unassigned activities with the plan's suggested days, moved around calendar clashes.
+  function applySuggested(week: PlanWeek) {
+    const next = suggestDays(week, busy, plan!.paces).week;
+    update((s) => ({ plan: s.plan && { ...s.plan, weeks: s.plan.weeks.map((x) => (x.startDate === week.startDate ? next : x)) } }));
+  }
+  function clearDays(week: PlanWeek) {
+    update((s) => ({ plan: s.plan && { ...s.plan, weeks: s.plan.weeks.map((x) => (x.startDate === week.startDate ? { ...x, workouts: x.workouts.map((y) => ({ ...y, scheduled: undefined })) } : x)) } }));
+  }
 
   function downloadIcs() {
-    const workouts = plan!.weeks.flatMap((w) => w.workouts).filter((w) => w.date >= today());
+    const workouts = assignedWorkouts(plan!, today());
     const blob = new Blob([workoutsToIcs(workouts, (w) => workoutLabel(w, u, plan!.paces))], { type: 'text/calendar' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -47,7 +67,7 @@ export function PlanView() {
   async function pushGoogle() {
     if (!googleConnected()) return setMsg('Connect Google Calendar on the Calendar tab first.');
     const until = addDays(today(), 28);
-    const workouts = plan!.weeks.flatMap((w) => w.workouts).filter((w) => w.date >= today() && w.date < until);
+    const workouts = assignedWorkouts(plan!, today()).filter((w) => w.date < until);
     if (!confirm(`Add ${workouts.filter((w) => w.type !== 'rest').length} workouts (next 4 weeks) to your Google Calendar?`)) return;
     try {
       const n = await pushWorkoutsToGoogle(workouts, (w) => workoutLabel(w, u, plan!.paces));
@@ -78,24 +98,26 @@ export function PlanView() {
       <label className="check"><input type="checkbox" checked={showPast} onChange={(e) => setShowPast(e.target.checked)} /> Show past weeks</label>
       {weeks.map((w) => {
         const actual = weekActualKm(w, logs);
+        const progress = weekProgress(w, state);
+        const items = activitiesOf(w).filter((x) => x.type !== 'race');
+        const unassigned = items.filter((x) => !x.scheduled && !isDone(x, logs, state.activities)).length;
+        const assigned = items.filter((x) => x.scheduled).length;
         return (
           <Card
             key={w.startDate}
             title={<>Week {w.index + 1} · {formatDate(w.startDate, { day: 'numeric', month: 'short' })} <span className={`phase p-${w.phase}`}>{w.phase}</span>{w.cutback && <span className="pill">cutback</span>}</>}
-            actions={
-              <span className="muted">
-                {w.startDate <= today() ? `${fmtDist(actual, u, 0)} / ` : ''}{fmtDist(w.targetKm, u, 0)}
-                {' '}· ~{fmtMinutes(w.workouts.reduce((s, x) => s + runMinutes(x, plan.paces), 0))}
-              </span>
-            }
+            actions={<span className={`pill ${progress.done === progress.total ? 'ok' : ''}`}>{progress.done}/{progress.total} done</span>}
           >
+            <p className="muted small week-totals">
+              {w.startDate <= today() ? `${fmtDist(actual, u, 0)} of ` : ''}{fmtDist(w.targetKm, u, 0)} · ~{fmtMinutes(w.workouts.reduce((s, x) => s + runMinutes(x, plan.paces), 0))}
+            </p>
             {w.index === plan.weeks.findIndex((x) => x.phase === w.phase) && <p className="muted small">{PHASE_INFO[w.phase]}</p>}
             {w.adaptationNote && <p className="note">↻ {w.adaptationNote}</p>}
-            {w.workouts.map((x) => (
-              <Fragment key={x.id}>
-                <WorkoutLine w={x} done={doneOn(x.date)} />
-              </Fragment>
-            ))}
+            <WeekChecklist week={w} />
+            <div className="row">
+              {unassigned > 0 && <button className="small" onClick={() => applySuggested(w)}>Use suggested days ({unassigned})</button>}
+              {assigned > 0 && <button className="link small" onClick={() => clearDays(w)}>Clear days</button>}
+            </div>
           </Card>
         );
       })}

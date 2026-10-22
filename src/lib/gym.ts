@@ -91,7 +91,8 @@ export function scoreClasses(
   home: Geo | null,
   work: Geo | null,
 ): ClassSuggestion[] {
-  const byDate = new Map(week.workouts.map((w) => [w.date, w]));
+  // The runner's chosen day when set, otherwise the plan's suggestion. Rest days go first so activities win a shared date.
+  const byDate = new Map([...week.workouts].sort((a, b) => (a.type === 'rest' ? -1 : 0) - (b.type === 'rest' ? -1 : 0)).map((w) => [w.type === 'race' ? w.date : w.scheduled ?? w.date, w]));
   const gymById = new Map(gyms.map((g) => [g.id, g]));
   const out: ClassSuggestion[] = [];
 

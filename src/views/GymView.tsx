@@ -6,7 +6,8 @@ import { uid } from '../lib/format';
 import { directionsUrl, geocode, parseTimetable, pickWeeklyClasses, scoreClasses } from '../lib/gym';
 import { useBusyEvents } from './CalendarView';
 import type { ClassCategory, GymClass, GymMembership } from '../types';
-import { classLog } from './LogView';
+import { classLog, withLinkedLogs } from './LogView';
+import { matchGym } from '../lib/schedule';
 import { WELLHUB_GOLD } from '../lib/presets';
 import { BRANDS, classFromTemplate, NEARBY_STUDIOS, templatesFor } from '../lib/studios';
 
@@ -61,9 +62,10 @@ export function GymView() {
     return !!c && state.activities.some((a) => a.date === date && a.name === c.name);
   };
   function logClass(c: GymClass, date: string) {
-    const planned = plan?.weeks.flatMap((w) => w.workouts).find((w) => w.date === date && w.type === 'strength');
-    update((st) => ({ activities: [...st.activities, classLog({ date, kind: c.category, name: c.name, gymId: c.gymId, durationMin: c.durationMin, rpe: c.runningLoad ? 8 : c.category === 'yoga' ? 3 : 6, plannedId: c.category === 'strength' ? planned?.id : undefined })] }));
+    const planned = c.category === 'strength' ? matchGym(plan, state.activities, date) : undefined;
+    update((st) => withLinkedLogs(st, [], [classLog({ date, kind: c.category, name: c.name, gymId: c.gymId, durationMin: c.durationMin, rpe: c.runningLoad ? 8 : c.category === 'yoga' ? 3 : 6, plannedId: planned?.id })]));
   }
+
 
   const qaGymObj = gyms.find((g) => g.id === (qaGym || gyms[0]?.id));
   const qaTemplates = qaGymObj ? templatesFor(qaGymObj) : [];

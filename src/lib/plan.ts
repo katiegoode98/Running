@@ -284,8 +284,3 @@ export function isHard(type: WorkoutType): boolean {
   return type === 'long' || type === 'tempo' || type === 'intervals' || type === 'marathon-pace' || type === 'race';
 }
 
-export function workoutOn(plan: Plan | null, date: string): Workout | undefined {
-  if (!plan) return undefined;
-  const monday = mondayOf(date);
-  return plan.weeks.find((w) => w.startDate === monday)?.workouts.find((x) => x.date === date && x.type !== 'rest');
-}

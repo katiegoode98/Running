@@ -59,13 +59,15 @@ export type Phase = 'foundation' | 'base' | 'build' | 'peak' | 'taper';
 
 export interface Workout {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string; // suggested day (YYYY-MM-DD); see `scheduled` for the runner's choice
   type: WorkoutType;
   distanceKm: number;
   title: string;
   description: string;
   paceSecPerKm?: number;
   strength?: StrengthSession;
+  scheduled?: string; // the day the runner assigned it to (YYYY-MM-DD); unset = not assigned yet
+  done?: boolean; // ticked off without a matching log (e.g. races)
   movedFrom?: string;
   moveReason?: string;
 }
@@ -106,7 +108,7 @@ export interface RunLog {
   pain?: boolean;
   avgHr?: number;
   maxHr?: number;
-  source?: 'manual' | 'garmin';
+  source?: 'manual' | 'garmin' | 'tick'; // 'tick' = created by ticking off a planned item
   externalId?: string; // start time of an imported activity, used to skip duplicates
 }
 
@@ -122,7 +124,7 @@ export interface ActivityLog {
   rpe: number;
   notes: string;
   avgHr?: number;
-  source?: 'manual' | 'garmin';
+  source?: 'manual' | 'garmin' | 'tick'; // 'tick' = created by ticking off a planned item
   externalId?: string;
 }
 

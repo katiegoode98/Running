@@ -4,7 +4,8 @@ import { Card, Empty, Field } from '../components/ui';
 import { useStore } from '../store';
 import { formatDate, today } from '../lib/dates';
 import { fmtDist, fmtDuration, fmtMinutes, fmtPace, KM_PER_MI, parseRaceTime, uid } from '../lib/format';
-import { workoutOn } from '../lib/plan';
+import { matchGym, matchRun } from '../lib/schedule';
+import type { AppState } from '../store';
 import { adaptPlan, assess, type Performance } from '../lib/adapt';
 import { DISTANCE_KM } from '../lib/races';
 import { hrZone, maxHeartRate, rpeFromHr } from '../lib/heartrate';
@@ -46,6 +47,26 @@ export function AdaptCard() {
   );
 }
 
+/**
+ * Adds logs and links them to the plan: each one replaces any ticked-off
+ * placeholder for its planned activity, and an unassigned activity moves to
+ * the day it was actually done.
+ */
+export function withLinkedLogs(s: AppState, runs: RunLog[], acts: ActivityLog[]): Partial<AppState> {
+  const runIds = new Set(runs.map((r) => r.workoutId).filter(Boolean));
+  const gymIds = new Set(acts.map((a) => a.plannedId).filter(Boolean));
+  const dayById = new Map([...runs.map((r) => [r.workoutId, r.date] as const), ...acts.map((a) => [a.plannedId, a.date] as const)]);
+  const plan = s.plan && {
+    ...s.plan,
+    weeks: s.plan.weeks.map((w) => ({ ...w, workouts: w.workouts.map((x) => (dayById.has(x.id) && !x.scheduled && x.type !== 'race' ? { ...x, scheduled: dayById.get(x.id) } : x)) })),
+  };
+  return {
+    plan,
+    logs: [...s.logs.filter((l) => !(l.source === 'tick' && runIds.has(l.workoutId))), ...runs],
+    activities: [...s.activities.filter((a) => !(a.source === 'tick' && gymIds.has(a.plannedId))), ...acts],
+  };
+}
+
 type Mode = 'run' | 'class' | 'import';
 const KINDS = Object.keys(KIND_LABEL) as ClassCategory[];
 
@@ -73,8 +94,8 @@ function RunForm() {
   const units = state.profile?.units ?? 'km';
   const f = units === 'mi' ? KM_PER_MI : 1;
   const [date, setDate] = useState(today());
-  const planned = workoutOn(state.plan, date);
   const [dist, setDist] = useState('');
+  const planned = matchRun(state.plan, state.logs, date, Number(dist) * f || 0);
   const [time, setTime] = useState('');
   const [rpe, setRpe] = useState(4);
   const [hr, setHr] = useState('');
@@ -88,13 +109,13 @@ function RunForm() {
     const sec = parseRaceTime(time, km);
     if (!sec) return setErr('Enter a time that fits the distance — mm:ss or h:mm:ss, e.g. 52:30 or 1:05:00.');
     const avgHr = Number(hr) || undefined;
-    update((s) => ({ logs: [...s.logs, { id: uid(), date, workoutId: planned?.distanceKm ? planned.id : undefined, distanceKm: km, durationSec: sec, rpe, notes, pain, avgHr, source: 'manual' }] }));
+    update((s) => withLinkedLogs(s, [{ id: uid(), date, workoutId: planned?.id, distanceKm: km, durationSec: sec, rpe, notes, pain, avgHr, source: 'manual' }], []));
     setDist(''); setTime(''); setHr(''); setNotes(''); setPain(false); setErr('');
   }
 
   return (
     <Card title="Log a run">
-      {planned && planned.distanceKm > 0 && <p className="muted">Planned: <strong>{planned.title}</strong> · {fmtDist(planned.distanceKm, units)}</p>}
+      {planned && <p className="muted">Ticks off: <strong>{planned.title}</strong> · {fmtDist(planned.distanceKm, units)}</p>}
       <div className="grid">
         <Field label="Date"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
         <Field label={`Distance (${units})`}><input type="number" step="0.1" value={dist} onChange={(e) => setDist(e.target.value)} /></Field>
@@ -119,8 +140,7 @@ export function classLog(partial: Omit<ActivityLog, 'id' | 'notes' | 'rpe'> & { 
 function ClassForm() {
   const { state, update } = useStore();
   const [date, setDate] = useState(today());
-  const planned = workoutOn(state.plan, date);
-  const gymDay = planned?.type === 'strength' ? planned : undefined;
+  const gymDay = matchGym(state.plan, state.activities, date);
   const [classId, setClassId] = useState('');
   const [kind, setKind] = useState<ClassCategory>('strength');
   const [name, setName] = useState('');
@@ -142,14 +162,14 @@ function ClassForm() {
     const label = name.trim() || (gymDay && kind === 'strength' ? gymDay.title.replace(/^Gym: /, '') : KIND_LABEL[kind]);
     if (!durationMin) return setMsg('Enter how long it lasted.');
     const plannedId = gymDay && kind === 'strength' ? gymDay.id : undefined;
-    update((s) => ({ activities: [...s.activities, classLog({ date, kind, name: label, gymId: gymId || undefined, plannedId, durationMin, rpe, notes, avgHr: Number(hr) || undefined, source: 'manual' })] }));
+    update((s) => withLinkedLogs(s, [], [classLog({ date, kind, name: label, gymId: gymId || undefined, plannedId, durationMin, rpe, notes, avgHr: Number(hr) || undefined, source: 'manual' })]));
     setMsg(`Logged ${label}.`);
     setName(''); setNotes(''); setHr(''); setClassId('');
   }
 
   return (
     <Card title="Log a class or gym session">
-      {gymDay && <p className="muted">Planned: <strong>{gymDay.title}</strong> — logging strength today ticks it off.</p>}
+      {gymDay && <p className="muted">Logging strength ticks off this week's <strong>{gymDay.title}</strong>.</p>}
       <div className="grid">
         <Field label="Date"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
         {state.classes.length > 0 && (
@@ -231,15 +251,21 @@ function GarminImport({ onDone }: { onDone: () => void }) {
 
   function save() {
     const keep = pending.filter((p) => p.keep);
+    // Match in date order, counting earlier matches so two runs don't claim the same planned run.
+    const matchedLogs: RunLog[] = [...state.logs];
     const runs: RunLog[] = keep.filter((p) => p.sport === 'run' && p.distanceKm > 0).map((p) => {
-      const w = workoutOn(state.plan, p.date);
-      return { id: uid(), date: p.date, workoutId: w && w.distanceKm > 0 ? w.id : undefined, distanceKm: p.distanceKm, durationSec: p.durationSec, rpe: p.rpe, notes: p.name === 'Run' ? '' : p.name, avgHr: p.avgHr, maxHr: p.maxHr, source: 'garmin', externalId: p.externalId };
+      const w = matchRun(state.plan, matchedLogs, p.date, p.distanceKm);
+      if (w) matchedLogs.push({ id: '', date: p.date, workoutId: w.id, distanceKm: 0, durationSec: 0, rpe: 0, notes: '' });
+      return { id: uid(), date: p.date, workoutId: w?.id, distanceKm: p.distanceKm, durationSec: p.durationSec, rpe: p.rpe, notes: p.name === 'Run' ? '' : p.name, avgHr: p.avgHr, maxHr: p.maxHr, source: 'garmin', externalId: p.externalId };
     });
+    const matchedActs: ActivityLog[] = [...state.activities];
     const acts: ActivityLog[] = keep.filter((p) => p.sport !== 'run').map((p) => {
-      const w = workoutOn(state.plan, p.date);
-      return classLog({ date: p.date, kind: p.kind, name: p.name, durationMin: Math.round(p.durationSec / 60), rpe: p.rpe, avgHr: p.avgHr, source: 'garmin', externalId: p.externalId, plannedId: w?.type === 'strength' && p.kind === 'strength' ? w.id : undefined });
+      const w = p.kind === 'strength' ? matchGym(state.plan, matchedActs, p.date) : undefined;
+      const log = classLog({ date: p.date, kind: p.kind, name: p.name, durationMin: Math.round(p.durationSec / 60), rpe: p.rpe, avgHr: p.avgHr, source: 'garmin', externalId: p.externalId, plannedId: w?.id });
+      matchedActs.push(log);
+      return log;
     });
-    update((s) => ({ logs: [...s.logs, ...runs], activities: [...s.activities, ...acts] }));
+    update((s) => withLinkedLogs(s, runs, acts));
     setPending([]);
     setMsg(`Imported ${runs.length} run${runs.length === 1 ? '' : 's'} and ${acts.length} other session${acts.length === 1 ? '' : 's'}.`);
     onDone();
