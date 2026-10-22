@@ -1,10 +1,11 @@
 import { Card, Field } from '../components/ui';
 import { initialState, useStore, type AppState } from '../store';
+import { THEMES } from '../lib/themes';
 
 export function SettingsView() {
   const { state, update, replace } = useStore();
   const origin = `${window.location.origin}${window.location.pathname}`;
-  const setKey = (k: keyof AppState['settings'], v: string) => update((s) => ({ settings: { ...s.settings, [k]: v.trim() } }));
+  const setKey = (k: 'googleClientId' | 'spotifyClientId', v: string) => update((s) => ({ settings: { ...s.settings, [k]: v.trim() } }));
 
   function exportData() {
     const a = document.createElement('a');
@@ -24,6 +25,24 @@ export function SettingsView() {
 
   return (
     <div className="stack">
+      <Card title="Colour scheme">
+        <div className="theme-picker">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              className={`theme-option ${state.settings.theme === t.id ? 'active' : ''}`}
+              aria-pressed={state.settings.theme === t.id}
+              onClick={() => update((s) => ({ settings: { ...s.settings, theme: t.id } }))}
+            >
+              <span className="theme-swatch" style={{ background: `linear-gradient(135deg, ${t.brand[0]}, ${t.brand[1]})` }}>
+                <span style={{ background: t.accent }} />
+              </span>
+              <span className="theme-name">{t.name}</span>
+              <span className="muted small">{t.tagline}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
       <Card title="Integrations">
         <Field label="Google OAuth client ID" hint={`Google Cloud Console → APIs & Services: enable the Calendar API, create an OAuth "Web application" client, and add ${window.location.origin} as an authorised JavaScript origin.`}>
           <input value={state.settings.googleClientId} onChange={(e) => setKey('googleClientId', e.target.value)} />

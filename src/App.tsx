@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useStore } from './store';
 import { completeSpotifyLogin } from './lib/spotify';
 import { withStrengthDays } from './lib/strength';
+import { applyTheme } from './lib/themes';
+import { Banner } from './components/Banner';
 import { TodayView } from './views/TodayView';
 import { PlanView } from './views/PlanView';
 import { LogView } from './views/LogView';
@@ -43,6 +45,8 @@ export function App() {
     window.scrollTo(0, 0);
   };
 
+  useLayoutEffect(() => applyTheme(state.settings.theme), [state.settings.theme]);
+
   // Plans saved before race times were validated can have impossible paces (seconds per km).
   const pacesBroken = !!state.plan && state.plan.paces.easy < 155;
 
@@ -60,7 +64,7 @@ export function App() {
   if (!state.profile) {
     return (
       <main className="app">
-        <header className="top"><h1>🏃 Marathon Coach</h1></header>
+        <header className="top"><Banner /></header>
         <ProfileView onDone={() => setTab('today')} />
       </main>
     );
@@ -69,7 +73,7 @@ export function App() {
   return (
     <main className="app">
       <header className="top">
-        <h1>🏃 Marathon Coach</h1>
+        <Banner />
         <nav className="top-nav">
           {TABS.map(([id, label]) => (
             <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>{label}</button>
