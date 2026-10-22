@@ -58,6 +58,7 @@ On first launch, fill in your goal race, goal time, current fitness and a recent
 | **Calendar** | Google Calendar sync or `.ics` import (iCloud/Outlook). Ranks the best day for long runs and moves workouts around clashes |
 | **Gym** | Your membership details, clubs (mapped via OpenStreetMap) and class timetables. Suggests classes for each training week based on your phase, the runs either side, calendar clashes and travel time from home or work |
 | **Races** | Tracks tune-up races, entry windows, ballots and lotteries, with reminders for the next thing to do. Shows how well each race fits your block, and can put a race into your plan. Race results feed back into your fitness estimate |
+| **Routes** | 13 NYC running routes, including Central Park loops, Harlem Hill, the Hudson and East River paths, the bridges, Prospect Park and the islands. Each shows distance, elevation gain (with the range where sources disagree), terrain, distance from home and tips. Pick a planned run to see how to fit it to each route (laps, turnaround point, or one way and subway home) |
 | **Music** | Builds a Spotify playlist sized to a workout's duration and suggests podcasts and audiobooks for long runs |
 | **Nutrition** | Daily carb, protein and fat targets that change with each day's training (carb-load before the race), a food log, a weight log with a 7-day trend, long-run fuelling advice, and an overview of diet approaches |
 

@@ -8,6 +8,7 @@ import { LogView } from './views/LogView';
 import { CalendarView } from './views/CalendarView';
 import { GymView } from './views/GymView';
 import { RacesView } from './views/RacesView';
+import { RoutesView } from './views/RoutesView';
 import { MusicView } from './views/MusicView';
 import { NutritionView } from './views/NutritionView';
 import { ProfileView } from './views/ProfileView';
@@ -18,6 +19,7 @@ const TABS = [
   ['plan', 'Plan', '📅'],
   ['log', 'Log', '➕'],
   ['races', 'Races', '🏁'],
+  ['routes', 'Routes', '🗺️'],
   ['calendar', 'Calendar', '🗓'],
   ['gym', 'Gym', '🏋️'],
   ['music', 'Music', '🎧'],
@@ -108,6 +110,7 @@ export function App() {
       {tab === 'calendar' && <CalendarView />}
       {tab === 'gym' && <GymView />}
       {tab === 'races' && <RacesView />}
+      {tab === 'routes' && <RoutesView />}
       {tab === 'music' && <MusicView />}
       {tab === 'nutrition' && <NutritionView />}
       {tab === 'profile' && <ProfileView />}

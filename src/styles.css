@@ -228,3 +228,10 @@ label.button.primary { background: var(--accent); color: white; border-color: va
   .day-select { font-size: 16px; max-width: 118px; }
 }
 .t-cross { background: #f3f0ff; color: #5f3dc4; }
+
+/* Routes tab */
+.route-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+.route-stats div { display: flex; flex-direction: column; }
+.pill.terrain-flat { color: var(--ok); border-color: var(--ok); }
+.pill.terrain-rolling { color: #8f5b00; border-color: #e0b44c; }
+.pill.terrain-hilly { color: var(--warn); border-color: var(--warn); }
