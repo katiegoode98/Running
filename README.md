@@ -54,7 +54,7 @@ On first launch, fill in your goal race, goal time, current fitness and a recent
 | --- | --- |
 | **Today** | Countdown, today's session, this week, race-entry alerts, today's fuelling target |
 | **Plan** | Week-by-week plan in base → build → peak → taper phases, with training paces. You can export it as `.ics` (Apple/Outlook) or push it to Google Calendar |
-| **Log** | Log runs with effort (RPE) and pain flags. The **Progress check** suggests changes to upcoming weeks, and you choose whether to apply them |
+| **Log** | Log runs (with effort, heart rate and pain flags), classes and gym sessions, or import Garmin files. A weekly training chart shows time and load (minutes × effort) for running vs gym and classes. The **Progress check** suggests changes to upcoming weeks, including when easy-run heart rate is too high, and you choose whether to apply them |
 | **Calendar** | Google Calendar sync or `.ics` import (iCloud/Outlook). Ranks the best day for long runs and moves workouts around clashes |
 | **Gym** | Your membership details, clubs (mapped via OpenStreetMap) and class timetables. Suggests classes for each training week based on your phase, the runs either side, calendar clashes and travel time from home or work |
 | **Races** | Tracks tune-up races, entry windows, ballots and lotteries, with reminders for the next thing to do. Shows how well each race fits your block, and can put a race into your plan. Race results feed back into your fitness estimate |
@@ -101,6 +101,13 @@ Development-mode apps need the owner to have Spotify Premium (Spotify's 2026 rul
 **Apple / iCloud Calendar**: iCloud has no public API. Instead:
 - To get your events in: in Calendar.app, choose *File → Export* and import the `.ics` file on the Calendar tab.
 - To get your plan out: export the plan as `.ics` and import it into Calendar.app.
+
+**Garmin watch**: Garmin has paused new access to its Connect API (September 2026), and Strava's API needs a server-side secret. So the app imports the files Garmin Connect exports, reading them on the device:
+1. Open connect.garmin.com in Safari and open an activity.
+2. Tap ⚙️ → **Export Original** (.zip containing .fit) or **Export TCX** / **Export GPX**.
+3. In the app, go to **Log → Import from Garmin** and pick one or more files.
+
+The import brings in distance, time, and average and max heart rate. Runs are matched to the plan. Strength, cycling, yoga and other sessions become class or gym logs, and duplicates are skipped. The Garmin FIT SDK is loaded only when you import.
 
 **Maps**: addresses are geocoded with OpenStreetMap Nominatim (no key needed). Travel times are estimates, and directions open in Google Maps.
 

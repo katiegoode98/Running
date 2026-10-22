@@ -172,3 +172,39 @@ td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: top; }
 .route-option p { margin: 4px 0; }
 .route-option .row { gap: 4px; }
 .pill.tag { margin-left: 0; background: var(--card); }
+.t-strength { background: #e7f5ff; color: #1c4f82; }
+.exercises { padding-left: 20px; margin: 6px 0; }
+.exercises li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.exercises .sets { font-weight: 700; white-space: nowrap; }
+
+/* Log tab */
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 10px; }
+.segmented button { border: none; background: none; padding: 8px 4px; border-radius: 8px; font-size: 0.85rem; color: var(--muted); }
+.segmented button.active { background: var(--card); color: var(--text); font-weight: 600; }
+.steps { padding-left: 18px; margin: 0 0 10px; }
+.steps li { margin-bottom: 4px; }
+.import-row { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.import-row select { padding: 4px 6px; min-height: 0; }
+.history-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); align-items: start; }
+.history-row:first-of-type { border-top: none; }
+.ok-text { color: var(--ok); font-weight: 600; }
+label.button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* Weekly training chart: validated categorical pair (runs = orange, gym/classes = blue) */
+:root { --chart-run: #e8590c; --chart-other: #2a78d6; }
+@media (prefers-color-scheme: dark) { :root { --chart-run: #d95926; --chart-other: #3987e5; } }
+.load-chart { width: 100%; height: auto; display: block; margin-top: 4px; }
+.load-chart .seg.run { fill: var(--chart-run); }
+.load-chart .seg.other { fill: var(--chart-other); }
+.load-chart .bar.active .seg { opacity: 1; }
+.load-chart .bar:not(.active) .seg { opacity: 0.88; }
+.load-chart .baseline { stroke: var(--line); stroke-width: 1; }
+.load-chart .axis { fill: var(--muted); font-size: 9px; }
+.load-chart .hit { fill: transparent; cursor: pointer; }
+.legend { display: flex; gap: 14px; margin: 6px 0 2px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.swatch.run { background: var(--chart-run); }
+.swatch.other { background: var(--chart-other); }
+.chart-readout { min-height: 2.6em; margin: 4px 0 0; }
+@media (max-width: 700px) { .history-row { grid-template-columns: 1fr auto; } .history-row .workout-date { grid-column: 1 / -1; } }
+.paces.stats span { text-transform: none; }

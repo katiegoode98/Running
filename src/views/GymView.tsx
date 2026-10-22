@@ -5,7 +5,8 @@ import { DAY_NAMES, DAY_SHORT, formatDate, mondayOf, today } from '../lib/dates'
 import { uid } from '../lib/format';
 import { directionsUrl, geocode, parseTimetable, pickWeeklyClasses, scoreClasses } from '../lib/gym';
 import { useBusyEvents } from './CalendarView';
-import type { ClassCategory, GymMembership } from '../types';
+import type { ClassCategory, GymClass, GymMembership } from '../types';
+import { classLog } from './LogView';
 import { WELLHUB_GOLD } from '../lib/presets';
 import { BRANDS, classFromTemplate, NEARBY_STUDIOS, templatesFor } from '../lib/studios';
 
@@ -54,6 +55,16 @@ export function GymView() {
     setStudioMsg(todo.length ? `Added ${todo.length} studios.` : 'All nearby studios are already added.');
   }
 
+  // Classes logged from the recommendations are matched by name and date.
+  const logged = (classId: string, date: string) => {
+    const c = classes.find((x) => x.id === classId);
+    return !!c && state.activities.some((a) => a.date === date && a.name === c.name);
+  };
+  function logClass(c: GymClass, date: string) {
+    const planned = plan?.weeks.flatMap((w) => w.workouts).find((w) => w.date === date && w.type === 'strength');
+    update((st) => ({ activities: [...st.activities, classLog({ date, kind: c.category, name: c.name, gymId: c.gymId, durationMin: c.durationMin, rpe: c.runningLoad ? 8 : c.category === 'yoga' ? 3 : 6, plannedId: c.category === 'strength' ? planned?.id : undefined })] }));
+  }
+
   const qaGymObj = gyms.find((g) => g.id === (qaGym || gyms[0]?.id));
   const qaTemplates = qaGymObj ? templatesFor(qaGymObj) : [];
 
@@ -100,6 +111,9 @@ export function GymView() {
                   <strong>{s.cls.startTime} {s.cls.name}</strong> <span className="muted">@ {s.gym.name}</span>
                   {s.from && originFor(s.from) && <> · <a href={directionsUrl(originFor(s.from), s.gym.address)} target="_blank" rel="noreferrer">directions</a></>}
                   <div className="muted small">{s.reasons.join(' · ')}</div>
+                  {s.date <= today() && (logged(s.cls.id, s.date)
+                    ? <span className="pill ok">✓ done</span>
+                    : <button className="link" onClick={(e) => { e.stopPropagation(); logClass(s.cls, s.date); }}>✓ Log as done</button>)}
                 </div>
               </div>
             ))}

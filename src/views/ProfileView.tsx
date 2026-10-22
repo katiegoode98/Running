@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { DAY_NAMES, today } from '../lib/dates';
 import { fmtDuration, isPlausibleTime, KM_PER_MI, parseRaceTime, uid } from '../lib/format';
 import { MARATHON_KM } from '../lib/paces';
+import { maxHeartRate } from '../lib/heartrate';
 import { generatePlan, peakVolumeKm } from '../lib/plan';
 import { predictedMarathonSec, suggestGoals } from '../lib/paces';
 import { geocode } from '../lib/gym';
@@ -168,6 +169,9 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
           <Field label="Weight (kg)"><input type="number" value={p.weightKg} onChange={(e) => set('weightKg', num(e.target.value))} /></Field>
           <Field label="Height (cm)"><input type="number" value={p.heightCm} onChange={(e) => set('heightCm', num(e.target.value))} /></Field>
           <Field label="Age"><input type="number" value={p.age} onChange={(e) => set('age', num(e.target.value))} /></Field>
+          <Field label="Max heart rate (optional)" hint={`Leave blank to estimate (${maxHeartRate(p.age)} bpm from your age). From a race or hard hill effort on your Garmin is better.`}>
+            <input type="number" inputMode="numeric" value={p.maxHr ?? ''} placeholder={String(maxHeartRate(p.age))} onChange={(e) => set('maxHr', e.target.value ? Number(e.target.value) : undefined)} />
+          </Field>
           <Field label="Sex (for energy estimates)">
             <select value={p.sex} onChange={(e) => set('sex', e.target.value as Profile['sex'])}>
               <option value="female">Female</option>

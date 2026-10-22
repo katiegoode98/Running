@@ -1,6 +1,7 @@
 import type { CalendarEvent, Workout } from '../types';
 import { addDays } from './dates';
 import { toLocalStamp } from './calendar';
+import { fullDescription } from './strength';
 
 // Google Calendar via Google Identity Services (browser-only OAuth token flow).
 // Requires an OAuth "Web application" client ID whose authorised JavaScript
@@ -111,7 +112,7 @@ export async function pushWorkoutsToGoogle(workouts: Workout[], label: (w: Worko
       method: 'POST',
       body: JSON.stringify({
         summary: label(w),
-        description: w.description,
+        description: fullDescription(w),
         start: { date: w.date },
         end: { date: addDays(w.date, 1) },
         transparency: 'transparent',

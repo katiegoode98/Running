@@ -17,6 +17,7 @@ const PHASE_INFO: Record<Phase, string> = {
 };
 
 export function workoutLabel(w: Workout, units: 'km' | 'mi', paces?: Paces): string {
+  if (w.type === 'strength') return `🏋️ ${w.title}${w.strength ? ` (~${w.strength.durationMin} min)` : ''}`;
   if (w.distanceKm <= 0) return `🏃 ${w.title}`;
   const time = paces ? ` (~${fmtMinutes(runMinutes(w, paces))})` : '';
   return `🏃 ${w.title} – ${fmtDist(w.distanceKm, units)}${time}`;

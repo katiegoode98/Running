@@ -41,6 +41,8 @@ export function audioAdvice(type: WorkoutType): string {
       return 'Steady tempo music near your race cadence. Check whether your race allows headphones.';
     case 'long':
       return 'Mix it up: an audiobook or long podcast for the first two-thirds, then a music playlist to lift the final stretch.';
+    case 'strength':
+      return 'A punchy playlist helps with heavy sets — save podcasts for the rest periods.';
     default:
       return 'Conversational effort — podcasts are perfect. Keep music relaxed so you don\'t speed up.';
   }
@@ -48,6 +50,8 @@ export function audioAdvice(type: WorkoutType): string {
 
 export function searchKeywords(type: WorkoutType): string[] {
   switch (type) {
+    case 'strength':
+      return ['gym workout', 'workout high energy'];
     case 'intervals':
     case 'tempo':
       return ['running 175 bpm', 'workout high energy'];

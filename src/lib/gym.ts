@@ -135,6 +135,9 @@ export function scoreClasses(
       else { score -= 3; reasons.push('Same day as the long run'); }
     } else if (today && isHard(today.type) && demanding && !cls.runningLoad) {
       score += 1; reasons.push('Stacks on a hard day so easy days stay easy');
+    } else if (today?.type === 'strength') {
+      if (cls.category === 'strength') { score += 2; reasons.push('Your planned gym day — a class can replace the weights session'); }
+      else if (demanding) { score -= 2; reasons.push('Already a gym strength day'); }
     } else if (today?.type === 'rest') {
       score += 1; reasons.push('Fits a non-running day');
     }

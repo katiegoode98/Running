@@ -1,6 +1,7 @@
 import type { CalendarEvent, Paces, PlanWeek, Workout } from '../types';
 import { addDays, DAY_NAMES, dayOfWeek, toISODate } from './dates';
 import { isHard, runMinutes } from './plan';
+import { fullDescription } from './strength';
 
 // Local-time ISO "YYYY-MM-DDTHH:MM" helpers.
 export function toLocalStamp(d: Date): string {
@@ -97,12 +98,13 @@ export function rescheduleWeek(week: PlanWeek, events: CalendarEvent[], paces: P
     const candidates = dates
       .filter((d) => d !== date)
       .map((d) => ({ d, other: byDate.get(d)! }))
-      .filter(({ other }) => other.type === 'rest' || other.type === 'easy' || other.type === 'recovery')
+      // A run may take over the gym day; the gym session is skipped if it can't swap back.
+      .filter(({ other }) => other.type === 'rest' || other.type === 'easy' || other.type === 'recovery' || (other.type === 'strength' && w.type !== 'strength'))
       .filter(({ d }) => fits(w, d, events, paces))
       .filter(({ d }) => !isHard(w.type) || !hardNeighbour(d, w.id))
-      .filter(({ other }) => other.type === 'rest' || fits(other, date, events, paces))
+      .filter(({ other }) => other.type === 'rest' || other.type === 'strength' || fits(other, date, events, paces))
       .sort((a, b) => {
-        const rest = (x: Workout) => (x.type === 'rest' ? 0 : 1);
+        const rest = (x: Workout) => (x.type === 'rest' ? 0 : x.type === 'strength' ? 1 : 2);
         const weekendBonus = (d: string) => (w.type === 'long' && [0, 6].includes(dayOfWeek(d)) ? -0.5 : 0);
         return rest(a.other) - rest(b.other) || Math.abs(dist(a.d, date)) + weekendBonus(a.d) - (Math.abs(dist(b.d, date)) + weekendBonus(b.d));
       });
@@ -114,7 +116,12 @@ export function rescheduleWeek(week: PlanWeek, events: CalendarEvent[], paces: P
     }
     const other = pick.other;
     byDate.set(pick.d, { ...w, date: pick.d, movedFrom: w.movedFrom ?? date, moveReason: 'Calendar clash' });
-    byDate.set(date, { ...other, date, movedFrom: other.type === 'rest' ? undefined : other.movedFrom ?? pick.d });
+    if (other.type === 'strength' && !fits(other, date, events, paces)) {
+      byDate.set(date, { id: `${date}-rest`, date, type: 'rest', distanceKm: 0, title: 'Rest / cross-train', description: 'Rest day. The gym session was skipped this week to make room for a run.' });
+      moves.push({ workout: other, from: pick.d, to: null, reason: 'Gym session skipped this week to make room for a run' });
+    } else {
+      byDate.set(date, { ...other, date, movedFrom: other.type === 'rest' ? undefined : other.movedFrom ?? pick.d });
+    }
     moves.push({ workout: w, from: date, to: pick.d, reason: `${DAY_NAMES[dayOfWeek(date)]} is busy` });
   }
 
@@ -269,7 +276,7 @@ export function workoutsToIcs(workouts: Workout[], label: (w: Workout) => string
     const d = w.date.replace(/-/g, '');
     const next = addDays(w.date, 1).replace(/-/g, '');
     lines.push('BEGIN:VEVENT', `UID:${w.id}@marathon-coach`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${next}`,
-      `SUMMARY:${icsEscape(label(w))}`, `DESCRIPTION:${icsEscape(w.description)}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');
+      `SUMMARY:${icsEscape(label(w))}`, `DESCRIPTION:${icsEscape(fullDescription(w))}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');
   }
   lines.push('END:VCALENDAR');
   return lines.join('\r\n');

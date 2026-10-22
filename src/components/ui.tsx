@@ -39,6 +39,7 @@ const TYPE_LABEL: Record<WorkoutType, string> = {
   intervals: 'Intervals',
   'marathon-pace': 'MP',
   race: 'Race',
+  strength: 'Gym',
   rest: 'Rest',
 };
 
@@ -46,11 +47,12 @@ export function TypeBadge({ type }: { type: WorkoutType }) {
   return <span className={`badge t-${type}`}>{TYPE_LABEL[type]}</span>;
 }
 
-export function WorkoutLine({ w, done }: { w: Workout; done?: number }) {
+export function WorkoutLine({ w, done, defaultOpen = false }: { w: Workout; done?: number; defaultOpen?: boolean }) {
   const { state } = useStore();
-  const [open, setOpen] = useState(false);
+  const isGym = w.type === 'strength' && !!w.strength;
+  const tappable = isGym || (w.type !== 'rest' && w.type !== 'race' && w.distanceKm > 0);
+  const [open, setOpen] = useState(defaultOpen && tappable);
   const units = state.profile?.units ?? 'km';
-  const tappable = w.type !== 'rest' && w.type !== 'race' && w.distanceKm > 0;
   const toggle = () => tappable && setOpen((o) => !o);
   return (
     <>
@@ -72,14 +74,40 @@ export function WorkoutLine({ w, done }: { w: Workout; done?: number }) {
               {state.plan && <> · <span className="duration">~{fmtMinutes(runMinutes(w, state.plan.paces))}</span></>}
             </span>
           )}
+          {isGym && <span className="muted"> · <span className="duration">~{w.strength!.durationMin} min</span></span>}
+          {isGym && state.activities.some((a) => a.plannedId === w.id || (a.date === w.date && a.kind === 'strength')) && <span className="pill ok">✓ done</span>}
           {w.movedFrom && <span className="pill">moved from {formatDate(w.movedFrom)}</span>}
           {done !== undefined && done > 0 && <span className="pill ok">✓ {fmtDist(done, units)}</span>}
           <div className="muted small">{w.description}</div>
-          {tappable && <div className="route-hint small">{open ? '▴ Hide routes' : '▾ Route options'}</div>}
+          {tappable && <div className="route-hint small">{open ? (isGym ? '▴ Hide workout' : '▴ Hide routes') : isGym ? '▾ Show exercises' : '▾ Route options'}</div>}
         </div>
       </div>
-      {open && <RouteOptions w={w} />}
+      {open && (isGym ? <StrengthDetails w={w} /> : <RouteOptions w={w} />)}
     </>
+  );
+}
+
+function StrengthDetails({ w }: { w: Workout }) {
+  const { state } = useStore();
+  const s = w.strength!;
+  // Suggest where: a Life Time club if they have one, otherwise their first gym.
+  const gym = state.gyms.find((g) => /life ?time/i.test(g.name)) ?? state.gyms[0];
+  return (
+    <div className="route-options strength">
+      {gym && <p className="small"><strong>Where:</strong> {gym.name} (gym floor)</p>}
+      <p className="small"><strong>Warm-up:</strong> {s.warmUp}</p>
+      <ol className="exercises">
+        {s.exercises.map((e) => (
+          <li key={e.name}>
+            <div className="row spread"><strong>{e.name}</strong><span className="sets">{e.sets} × {e.reps}</span></div>
+            {e.load && <div className="small">{e.load}</div>}
+            {e.cue && <div className="small muted">{e.cue}</div>}
+          </li>
+        ))}
+      </ol>
+      <p className="small muted">{s.notes}</p>
+      <p className="small muted">RPE = effort out of 10. RPE 7 means you could do 2–3 more reps. Rest 90 s between sets (2–3 min for heavy sets of 5).</p>
+    </div>
   );
 }
 
