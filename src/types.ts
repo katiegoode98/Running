@@ -1,0 +1,183 @@
+// Shared domain types. All distances are stored in kilometres and all
+// durations in seconds; conversion to miles happens only at display time.
+
+export type Units = 'km' | 'mi';
+export type Experience = 'beginner' | 'intermediate' | 'advanced';
+export type Sex = 'female' | 'male';
+
+export interface Profile {
+  name: string;
+  raceName: string;
+  raceDate: string; // YYYY-MM-DD
+  goalTimeSec: number;
+  recentRace?: { distanceKm: number; timeSec: number };
+  currentWeeklyKm: number;
+  longestRecentRunKm: number;
+  runDaysPerWeek: 3 | 4 | 5 | 6;
+  longRunDay: number; // 0 = Sunday … 6 = Saturday
+  experience: Experience;
+  units: Units;
+  weightKg: number;
+  heightCm: number;
+  age: number;
+  sex: Sex;
+  homeAddress: string;
+  workAddress: string;
+  workDays: number[]; // days of week spent at work, 0 = Sunday
+}
+
+export type WorkoutType =
+  | 'easy'
+  | 'recovery'
+  | 'long'
+  | 'tempo'
+  | 'intervals'
+  | 'marathon-pace'
+  | 'race'
+  | 'rest';
+
+export type Phase = 'foundation' | 'base' | 'build' | 'peak' | 'taper';
+
+export interface Workout {
+  id: string;
+  date: string; // YYYY-MM-DD
+  type: WorkoutType;
+  distanceKm: number;
+  title: string;
+  description: string;
+  paceSecPerKm?: number;
+  movedFrom?: string;
+  moveReason?: string;
+}
+
+export interface PlanWeek {
+  index: number;
+  startDate: string; // Monday
+  phase: Phase;
+  targetKm: number;
+  cutback: boolean;
+  workouts: Workout[];
+  adaptationNote?: string;
+}
+
+export interface Plan {
+  createdAt: string;
+  weeks: PlanWeek[];
+  paces: Paces;
+}
+
+export interface Paces {
+  easy: number;
+  long: number;
+  marathon: number;
+  tempo: number;
+  interval: number;
+  recovery: number;
+}
+
+export interface RunLog {
+  id: string;
+  date: string;
+  workoutId?: string;
+  distanceKm: number;
+  durationSec: number;
+  rpe: number; // 1–10
+  notes: string;
+  pain?: boolean;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string; // ISO datetime (local)
+  end: string;
+  allDay: boolean;
+  source: 'google' | 'ics';
+}
+
+export type ClassCategory = 'strength' | 'yoga' | 'pilates' | 'spin' | 'hiit' | 'swim' | 'other';
+
+export interface Gym {
+  id: string;
+  name: string;
+  address: string;
+  verify?: boolean; // address from an older source — confirm in the Wellhub app
+  lat?: number;
+  lon?: number;
+}
+
+export interface GymClass {
+  id: string;
+  gymId: string;
+  name: string;
+  category: ClassCategory;
+  dayOfWeek: number;
+  startTime: string; // HH:MM
+  durationMin: number;
+  premium?: boolean; // counts against a premium-class allowance (e.g. Wellhub)
+  runningLoad?: boolean; // treadmill running (Barry's, Orangetheory) — loads the legs like a run
+}
+
+export interface GymMembership {
+  provider: string;
+  tier: string;
+  membershipNumber: string;
+  notes: string;
+  premiumPerMonth?: number;
+}
+
+export type RaceDistance = '5k' | '10k' | '10mi' | 'half' | 'marathon' | 'other';
+export type EntryType = 'open' | 'ballot' | 'lottery' | 'qualifier' | 'charity';
+export type RaceStatus =
+  | 'interested'
+  | 'guaranteed' // e.g. 9+1, time qualifier — entry earned but still to be claimed
+  | 'ballot-entered'
+  | 'ballot-won'
+  | 'ballot-lost'
+  | 'entered'
+  | 'completed'
+  | 'skipped';
+
+export interface Race {
+  id: string;
+  name: string;
+  date: string;
+  distance: RaceDistance;
+  location: string;
+  url: string;
+  entryType: EntryType;
+  entryOpens?: string;
+  entryCloses?: string;
+  ballotResult?: string;
+  cost?: string;
+  status: RaceStatus;
+  resultTimeSec?: number;
+  notes: string;
+}
+
+export interface WeightLog {
+  id: string;
+  date: string;
+  kg: number;
+}
+
+export interface FoodLog {
+  id: string;
+  date: string;
+  meal: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'fuel';
+  description: string;
+  kcal: number;
+  carbsG: number;
+  proteinG: number;
+  fatG: number;
+}
+
+export interface Settings {
+  googleClientId: string;
+  spotifyClientId: string;
+}
+
+export interface Geo {
+  lat: number;
+  lon: number;
+}
