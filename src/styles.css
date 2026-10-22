@@ -208,3 +208,22 @@ label.button.primary { background: var(--accent); color: white; border-color: va
 .chart-readout { min-height: 2.6em; margin: 4px 0 0; }
 @media (max-width: 700px) { .history-row { grid-template-columns: 1fr auto; } .history-row .workout-date { grid-column: 1 / -1; } }
 .paces.stats span { text-transform: none; }
+
+/* Weekly checklist */
+.checklist { margin: 4px 0 8px; }
+.check-item { padding: 10px 0; border-top: 1px solid var(--line); }
+.check-item:first-child { border-top: none; }
+.check-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: start; }
+.check-row .tick { width: 22px; height: 22px; min-height: 0; margin: 2px 0 0; accent-color: var(--ok); cursor: pointer; }
+.check-body { cursor: pointer; min-width: 0; }
+.check-body .row { gap: 6px; flex-wrap: wrap; }
+.check-detail { margin-left: 38px; }
+.check-item.done .check-body strong { text-decoration: line-through; color: var(--muted); }
+.check-item.done .badge { opacity: 0.5; }
+.day-select { font-size: 0.85rem; padding: 6px 8px; max-width: 128px; color: var(--muted); }
+.day-select.set { color: var(--text); font-weight: 600; border-color: var(--accent); }
+.warn { color: var(--warn); }
+.week-totals { margin: 0 0 4px; }
+@media (max-width: 700px) {
+  .day-select { font-size: 16px; max-width: 118px; }
+}

@@ -10,6 +10,7 @@ import { generatePlan, peakVolumeKm } from '../lib/plan';
 import { predictedMarathonSec, suggestGoals } from '../lib/paces';
 import { geocode } from '../lib/gym';
 import { NYC_2027, nycSeedRaces } from '../lib/presets';
+import { carryOver } from '../lib/schedule';
 
 const DEFAULT: Profile = {
   name: '',
@@ -82,7 +83,7 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
     update((s) => ({
       profile,
       geo,
-      ...(regenerate ? { plan: generatePlan(profile, { startDate: today() }) } : {}),
+      ...(regenerate ? { plan: carryOver(s.plan, generatePlan(profile, { startDate: today() })) } : {}),
       ...(seedNyc ? { races: [...s.races, ...nycSeedRaces(uid, guaranteed)] } : {}),
     }));
     setStatus(regenerate ? 'Saved and plan generated.' : 'Saved.');

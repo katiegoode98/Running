@@ -52,8 +52,8 @@ On first launch, fill in your goal race, goal time, current fitness and a recent
 
 | Tab | What it does |
 | --- | --- |
-| **Today** | Countdown, today's session, this week, race-entry alerts, today's fuelling target |
-| **Plan** | Week-by-week plan in base → build → peak → taper phases, with training paces. You can export it as `.ics` (Apple/Outlook) or push it to Google Calendar |
+| **Today** | Countdown, what you've assigned to today (tick it off), what's still to do this week (with **Do today**), race-entry alerts, today's fuelling target |
+| **Plan** | Each week is a checklist of activities (long run, sessions, easy runs, gym), in base → build → peak → taper phases. Pick a day for each (★ marks the suggested day), or use **Use suggested days**. Tick items off and they're logged automatically. Warnings flag back-to-back hard days or gym before a long run. Assigned activities export as `.ics` or to Google Calendar |
 | **Log** | Log runs (with effort, heart rate and pain flags), classes and gym sessions, or import Garmin files. A weekly training chart shows time and load (minutes × effort) for running vs gym and classes. The **Progress check** suggests changes to upcoming weeks, including when easy-run heart rate is too high, and you choose whether to apply them |
 | **Calendar** | Google Calendar sync or `.ics` import (iCloud/Outlook). Ranks the best day for long runs and moves workouts around clashes |
 | **Gym** | Your membership details, clubs (mapped via OpenStreetMap) and class timetables. Suggests classes for each training week based on your phase, the runs either side, calendar clashes and travel time from home or work |

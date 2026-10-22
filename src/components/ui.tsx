@@ -1,8 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { Workout, WorkoutType } from '../types';
-import { formatDate } from '../lib/dates';
-import { fmtDist, fmtMinutes, fmtPace } from '../lib/format';
-import { runMinutes } from '../lib/plan';
+import { fmtDist } from '../lib/format';
 import { isLowerManhattan, routeOptions, WATER_NOTE } from '../lib/routes';
 import { NYC_2027 } from '../lib/presets';
 import { useStore } from '../store';
@@ -47,47 +45,7 @@ export function TypeBadge({ type }: { type: WorkoutType }) {
   return <span className={`badge t-${type}`}>{TYPE_LABEL[type]}</span>;
 }
 
-export function WorkoutLine({ w, done, defaultOpen = false }: { w: Workout; done?: number; defaultOpen?: boolean }) {
-  const { state } = useStore();
-  const isGym = w.type === 'strength' && !!w.strength;
-  const tappable = isGym || (w.type !== 'rest' && w.type !== 'race' && w.distanceKm > 0);
-  const [open, setOpen] = useState(defaultOpen && tappable);
-  const units = state.profile?.units ?? 'km';
-  const toggle = () => tappable && setOpen((o) => !o);
-  return (
-    <>
-      <div
-        className={`workout ${w.type === 'rest' ? 'rest' : ''} ${tappable ? 'tappable' : ''} ${open ? 'open' : ''}`}
-        role={tappable ? 'button' : undefined}
-        tabIndex={tappable ? 0 : undefined}
-        aria-expanded={tappable ? open : undefined}
-        onClick={toggle}
-        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle())}
-      >
-        <div className="workout-date">{formatDate(w.date)}</div>
-        <TypeBadge type={w.type} />
-        <div className="workout-body">
-          <strong>{w.title}</strong>
-          {w.distanceKm > 0 && (
-            <span className="muted">
-              {' '}· {fmtDist(w.distanceKm, units)}{w.paceSecPerKm ? ` @ ${fmtPace(w.paceSecPerKm, units)}` : ''}
-              {state.plan && <> · <span className="duration">~{fmtMinutes(runMinutes(w, state.plan.paces))}</span></>}
-            </span>
-          )}
-          {isGym && <span className="muted"> · <span className="duration">~{w.strength!.durationMin} min</span></span>}
-          {isGym && state.activities.some((a) => a.plannedId === w.id || (a.date === w.date && a.kind === 'strength')) && <span className="pill ok">✓ done</span>}
-          {w.movedFrom && <span className="pill">moved from {formatDate(w.movedFrom)}</span>}
-          {done !== undefined && done > 0 && <span className="pill ok">✓ {fmtDist(done, units)}</span>}
-          <div className="muted small">{w.description}</div>
-          {tappable && <div className="route-hint small">{open ? (isGym ? '▴ Hide workout' : '▴ Hide routes') : isGym ? '▾ Show exercises' : '▾ Route options'}</div>}
-        </div>
-      </div>
-      {open && (isGym ? <StrengthDetails w={w} /> : <RouteOptions w={w} />)}
-    </>
-  );
-}
-
-function StrengthDetails({ w }: { w: Workout }) {
+export function StrengthDetails({ w }: { w: Workout }) {
   const { state } = useStore();
   const s = w.strength!;
   // Suggest where: a Life Time club if they have one, otherwise their first gym.
@@ -111,7 +69,7 @@ function StrengthDetails({ w }: { w: Workout }) {
   );
 }
 
-function RouteOptions({ w }: { w: Workout }) {
+export function RouteOptions({ w }: { w: Workout }) {
   const { state } = useStore();
   const profile = state.profile;
   const home = state.geo.home;
