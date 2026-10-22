@@ -17,6 +17,7 @@ export function fmtDuration(sec: number): string {
 
 /** "45 min" or "1 h 05 min", rounded to the nearest 5 minutes. */
 export function fmtMinutes(min: number): string {
+  if (min <= 0) return '0 min';
   const m = Math.max(5, Math.round(min / 5) * 5);
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
 }

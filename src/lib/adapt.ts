@@ -21,7 +21,7 @@ export interface Assessment {
 }
 
 /** Summarises recent training and decides whether the remaining plan should change. */
-export function assess(plan: Plan, logs: RunLog[], performances: Performance[], todayIso: string): Assessment {
+export function assess(plan: Plan, logs: RunLog[], performances: Performance[], todayIso: string, maxHr?: number): Assessment {
   const thisMonday = mondayOf(todayIso);
   const completed = plan.weeks.filter((w) => w.startDate < thisMonday).slice(-2);
   const planned = completed.reduce((s, w) => s + w.workouts.reduce((a, x) => a + x.distanceKm, 0), 0);
@@ -55,6 +55,14 @@ export function assess(plan: Plan, logs: RunLog[], performances: Performance[], 
     notes.push(`Recent performances suggest ~${Math.round(fitnessMarathonSec / 60)} min marathon fitness. Training paces can be sharpened.`);
   }
 
+  // Heart rate (from Garmin imports or manual entry) is a more honest check on easy runs than feel.
+  const easyHrs = recent.filter((l) => l.avgHr && ['easy', 'recovery'].includes(workoutTypes.get(l.workoutId ?? '') ?? '')).map((l) => l.avgHr!);
+  if (maxHr && easyHrs.length >= 2) {
+    const pct = easyHrs.reduce((a, b) => a + b, 0) / easyHrs.length / maxHr;
+    if (pct > 0.8) {
+      notes.push(`Your easy runs averaged ${Math.round(pct * 100)}% of max heart rate (about ${Math.round(pct * maxHr)} bpm). Easy means under ~75% (≈${Math.round(0.75 * maxHr)} bpm) — slow down, even if it feels awkward.`);
+    }
+  }
   if (complianceRecent !== null && complianceRecent > 1.15 && recommendation === 'none') {
     notes.push('You are running more than planned. That is fine if it feels easy, but volume beyond plan raises injury risk — consider holding back.');
   }

@@ -75,6 +75,7 @@ export function WorkoutLine({ w, done, defaultOpen = false }: { w: Workout; done
             </span>
           )}
           {isGym && <span className="muted"> · <span className="duration">~{w.strength!.durationMin} min</span></span>}
+          {isGym && state.activities.some((a) => a.plannedId === w.id || (a.date === w.date && a.kind === 'strength')) && <span className="pill ok">✓ done</span>}
           {w.movedFrom && <span className="pill">moved from {formatDate(w.movedFrom)}</span>}
           {done !== undefined && done > 0 && <span className="pill ok">✓ {fmtDist(done, units)}</span>}
           <div className="muted small">{w.description}</div>

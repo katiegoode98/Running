@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { CalendarEvent, FoodLog, Geo, Gym, GymClass, GymMembership, Plan, Profile, Race, RunLog, Settings, WeightLog } from './types';
+import type { ActivityLog, CalendarEvent, FoodLog, Geo, Gym, GymClass, GymMembership, Plan, Profile, Race, RunLog, Settings, WeightLog } from './types';
 
 export interface AppState {
   profile: Profile | null;
@@ -11,6 +11,7 @@ export interface AppState {
   membership: GymMembership;
   races: Race[];
   weights: WeightLog[];
+  activities: ActivityLog[];
   foods: FoodLog[];
   settings: Settings;
   geo: { home?: Geo; work?: Geo };
@@ -28,6 +29,7 @@ export const initialState: AppState = {
   membership: { provider: '', tier: '', membershipNumber: '', notes: '' },
   races: [],
   weights: [],
+  activities: [],
   foods: [],
   settings: {
     googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',

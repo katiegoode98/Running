@@ -24,6 +24,7 @@ export interface Profile {
   homeAddress: string;
   workAddress: string;
   workDays: number[]; // days of week spent at work, 0 = Sunday
+  maxHr?: number; // measured max heart rate; estimated from age when missing
 }
 
 export type WorkoutType =
@@ -103,6 +104,26 @@ export interface RunLog {
   rpe: number; // 1–10
   notes: string;
   pain?: boolean;
+  avgHr?: number;
+  maxHr?: number;
+  source?: 'manual' | 'garmin';
+  externalId?: string; // start time of an imported activity, used to skip duplicates
+}
+
+/** A non-running session: gym strength, a studio class or other cross-training. */
+export interface ActivityLog {
+  id: string;
+  date: string;
+  kind: ClassCategory;
+  name: string;
+  gymId?: string;
+  plannedId?: string; // the plan's gym workout this completes
+  durationMin: number;
+  rpe: number;
+  notes: string;
+  avgHr?: number;
+  source?: 'manual' | 'garmin';
+  externalId?: string;
 }
 
 export interface CalendarEvent {
