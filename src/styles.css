@@ -1,5 +1,5 @@
 /*
- * Colour schemes. Hudson is the default (plain :root); the others are picked in
+ * Colour schemes. Brooklyn Dusk is the default (plain :root); the others are picked in
  * Settings and set as data-scheme on <html>. Each sets the accent (buttons,
  * links, highlights), the banner gradient (--brand → --brand-2) and a
  * validated pair of chart colours (runs vs gym/classes).
@@ -15,13 +15,13 @@
   --on-accent: #ffffff;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
 
-  --accent: #0f766e;
-  --accent-soft: #e3f3f1;
-  --brand: #0f2a43;
-  --brand-2: #155e75;
-  --highlight: #5eead4;
-  --chart-run: #0e8f82;
-  --chart-other: #2a5fb8;
+  --accent: #6d28d9;
+  --accent-soft: #f1eafd;
+  --brand: #3b1e5f;
+  --brand-2: #a3306f;
+  --highlight: #fda4af;
+  --chart-run: #7c4dcc;
+  --chart-other: #d6457a;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
@@ -31,9 +31,9 @@
   --accent: #2f6b4f; --accent-soft: #e6f0ea; --brand: #1f4d38; --brand-2: #3c7a55; --highlight: #e9c46a;
   --chart-run: #2f8a5f; --chart-other: #b8860b;
 }
-:root[data-scheme='dusk'] {
-  --accent: #6d28d9; --accent-soft: #f1eafd; --brand: #3b1e5f; --brand-2: #a3306f; --highlight: #fda4af;
-  --chart-run: #7c4dcc; --chart-other: #d6457a;
+:root[data-scheme='hudson'] {
+  --accent: #0f766e; --accent-soft: #e3f3f1; --brand: #0f2a43; --brand-2: #155e75; --highlight: #5eead4;
+  --chart-run: #0e8f82; --chart-other: #2a5fb8;
 }
 :root[data-scheme='morning'] {
   --accent: #2563eb; --accent-soft: #e8effd; --brand: #1e293b; --brand-2: #2563eb; --highlight: #7dd3fc;
@@ -51,21 +51,21 @@
     --warn: #ff6b6b;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 
-    --accent: #3fb8a8;
-    --accent-soft: #13302e;
-    --on-accent: #06201d;
-    --brand: #0b1e30;
-    --brand-2: #0f4c5c;
-    --chart-run: #26a596;
-    --chart-other: #5b8def;
+    --accent: #a78bfa;
+    --accent-soft: #2a1f40;
+    --on-accent: #1a0f2e;
+    --brand: #2c1648;
+    --brand-2: #7a2454;
+    --chart-run: #9b7ae8;
+    --chart-other: #e0628f;
   }
   :root[data-scheme='park'] {
     --accent: #5fb98a; --accent-soft: #17291f; --on-accent: #0b1f14; --brand: #163a2a; --brand-2: #2d5e42;
     --chart-run: #4aa877; --chart-other: #b07d12;
   }
-  :root[data-scheme='dusk'] {
-    --accent: #a78bfa; --accent-soft: #2a1f40; --on-accent: #1a0f2e; --brand: #2c1648; --brand-2: #7a2454;
-    --chart-run: #9b7ae8; --chart-other: #e0628f;
+  :root[data-scheme='hudson'] {
+    --accent: #3fb8a8; --accent-soft: #13302e; --on-accent: #06201d; --brand: #0b1e30; --brand-2: #0f4c5c;
+    --chart-run: #26a596; --chart-other: #5b8def;
   }
   :root[data-scheme='morning'] {
     --accent: #60a5fa; --accent-soft: #172338; --on-accent: #0b1a2e; --brand: #111827; --brand-2: #1d4ed8;
