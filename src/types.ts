@@ -28,7 +28,7 @@ export interface Profile {
   planStyle?: PlanStyle;
 }
 
-/** 'adaptive' = the app's own periodised plan; 'higdon-novice1' = Hal Higdon's Novice 1 structure. */
+/** 'adaptive' = periodised plan with speed work; 'higdon-novice1' = Higdon-style: Novice 1 structure and similar mileage, all easy running. */
 export type PlanStyle = 'adaptive' | 'higdon-novice1';
 
 export type WorkoutType =

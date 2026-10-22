@@ -31,6 +31,7 @@ const DEFAULT: Profile = {
   homeAddress: '',
   workAddress: '',
   workDays: [1, 2, 3, 4, 5],
+  planStyle: 'higdon-novice1',
 };
 
 const RACE_DISTANCES: [string, number][] = [['5K', 5], ['10K', 10], ['Half marathon', 21.0975], ['Marathon', 42.195]];
@@ -119,15 +120,16 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
           <Field label="Plan style">
             <select value={p.planStyle ?? 'adaptive'} onChange={(e) => set('planStyle', e.target.value as PlanStyle)}>
               <option value="adaptive">Adaptive (speed work, periodised)</option>
-              <option value="higdon-novice1">Hal Higdon Novice 1</option>
+              <option value="higdon-novice1">Higdon-style (easy miles)</option>
             </select>
           </Field>
         </div>
-        {p.planStyle === 'higdon-novice1' ? (
+        {(p.planStyle ?? 'adaptive') === 'higdon-novice1' ? (
           <p className="muted small">
-            Follows <a href={HIGDON_URL} target="_blank" rel="noreferrer">Hal Higdon's Novice 1</a>: four easy runs a week (two short runs, a midweek
-            "sorta-long" run and the weekend long run building to 20 miles), cross-training the day after the long run, a half marathon in week 8
-            and a three-week taper. No speed work. Higdon publishes it in miles — switch Units to miles to match his numbers exactly.
+            Modelled on <a href={HIGDON_URL} target="_blank" rel="noreferrer">Hal Higdon's Novice 1</a>: four easy runs a week — two short runs, a
+            midweek "sorta-long" run and a weekend long run building to 20 miles — cross-training the day after the long run, a half marathon
+            in week 8 and a three-week taper. No speed work. Built from your own starting point, so the numbers are similar to Higdon's rather
+            than identical. Switch Units to miles to see his familiar round numbers.
           </p>
         ) : (
           <p className="muted small">The adaptive plan adds threshold, interval and marathon-pace sessions and caps long runs at about 3½ hours.</p>
@@ -154,7 +156,7 @@ export function ProfileView({ onDone }: { onDone?: () => void }) {
             {raceNeedsReentry && <small className="error">Your saved race time was misread — please enter it again.</small>}
             {recentRace && raceTime.trim() && !/^\d+:\d\d:\d\d$/.test(raceTime.trim()) && <small className="muted">Read as {fmtDuration(recentRace.timeSec)}</small>}
           </Field>
-          <Field label="Run days per week" hint={p.planStyle === 'higdon-novice1' ? 'Higdon Novice 1 always has 4 runs a week' : undefined}>
+          <Field label="Run days per week" hint={p.planStyle === 'higdon-novice1' ? 'Higdon-style plans always have 4 runs a week' : undefined}>
             <select value={p.planStyle === 'higdon-novice1' ? 4 : p.runDaysPerWeek} disabled={p.planStyle === 'higdon-novice1'} onChange={(e) => set('runDaysPerWeek', Number(e.target.value) as Profile['runDaysPerWeek'])}>
               {[3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>

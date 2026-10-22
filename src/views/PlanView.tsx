@@ -93,8 +93,8 @@ export function PlanView() {
       >
         {profile.planStyle === 'higdon-novice1' && (
           <p className="note small">
-            Following <a href={HIGDON_URL} target="_blank" rel="noreferrer">Hal Higdon's Novice 1</a>: all runs easy and conversational —
-            the paces below are a guide, not targets.
+            Higdon-style plan, modelled on <a href={HIGDON_URL} target="_blank" rel="noreferrer">Hal Higdon's Novice 1</a>: all runs easy and
+            conversational — the paces below are a guide, not targets.
           </p>
         )}
         <div className="paces">

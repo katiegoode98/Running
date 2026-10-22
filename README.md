@@ -65,9 +65,9 @@ On first launch, fill in your goal race, goal time, current fitness and a recent
 
 Choose a style in **Profile → Plan style**:
 - **Adaptive (default):** a periodised plan with threshold, interval and marathon-pace sessions, and long runs capped at about 3½ hours.
-- **Hal Higdon Novice 1:** follows [Higdon's free Novice 1 programme](https://www.halhigdon.com/training-programs/marathon-training/novice-1-marathon/), arranged around your long-run day.
+- **Higdon-style (default for new profiles):** modelled on [Hal Higdon's free Novice 1 programme](https://www.halhigdon.com/training-programs/marathon-training/novice-1-marathon/), with the same structure and similar mileage, generated from your own starting point and arranged around your long-run day.
   - **Weekly shape:** a long run, cross-training the next day, a rest day, a short run, a midweek "sorta-long" run (3 → 10 mi), another short run, then a rest day.
-  - **18-week block:** long runs build 6 → 20 miles with step-backs, there's a half marathon in week 8, and a three-week taper.
+  - **18-week block:** long runs build from where base training left off (6–10 mi) to 20 miles three weeks out, with a step-back about every third week. There's a half marathon in week 8 and a three-week taper.
   - **No speed work.** All runs are easy and conversational.
   - **Base weeks before the block** use the same shape at the 15–25 miles a week Higdon recommends.
   - **Gym:** the app's strength session sits on one of Higdon's rest days and is marked optional.

@@ -3,33 +3,53 @@ import { addDays, daysBetween, mondayOf } from './dates';
 import { fmtDist, fmtPace, KM_PER_MI } from './format';
 
 /*
- * Hal Higdon's Novice 1 marathon programme (free at halhigdon.com), laid out
- * around the runner's long-run day:
+ * Higdon-style plan: the structure and mileage of Hal Higdon's Novice 1
+ * marathon programme (free at halhigdon.com), generated from the runner's
+ * own starting point rather than copied week for week.
+ *
+ * Each week is laid out around the long-run day:
  *
  *   long run · cross-train · rest · short run · sorta-long run · short run · rest
  *
- * With a Saturday long run that's exactly Higdon's week (Sat long, Sun cross,
- * Mon rest, Tue/Thu short runs, Wed "sorta-long", Fri rest). All running is at a
- * comfortable, conversational pace; there is no speedwork. Long runs build from
- * 6 to 20 miles in week 15 with step-backs, a half marathon in week 8, then a
- * three-week taper. Distances are in miles, as Higdon publishes them.
- *
- * Before the 18-week block, base weeks follow the same shape at the 15–25
- * miles a week Higdon asks runners to have before starting.
+ * (with a Saturday long run that's Higdon's week). All running is easy and
+ * conversational — no speedwork. Over the final 18 weeks the long run builds
+ * to 20 miles three weeks before the race with a step-back roughly every third
+ * week, the midweek "sorta-long" run builds from 3 to 10 miles, short runs
+ * from 3 to 5, there's a half marathon in week 8 and a three-week taper.
+ * Before that, base weeks use the same shape at 15–25 miles a week.
  */
 
 export const HIGDON_URL = 'https://www.halhigdon.com/training-programs/marathon-training/novice-1-marathon/';
 
-const N1 = {
-  short1: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 4, 3],
-  sortaLong: [3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 8, 6, 4],
-  short2: [3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 5, 5, 5, 5, 4, 3, 2],
-  // 0 = no long run: week 8 has a half marathon instead, week 18 the marathon.
-  long: [6, 7, 5, 9, 10, 7, 12, 0, 10, 15, 16, 12, 18, 14, 20, 12, 8, 0],
-};
+export const BLOCK = 18;
+const HALF_WEEK = 7; // 0-based: week 8
+const PEAK_WEEK = 14; // 0-based: the 20-miler, three weeks before race week
+const PEAK_LONG = 20;
+// Build weeks climb toward the peak; the others are step-backs (or the half).
+const UP_WEEKS = [0, 1, 3, 4, 6, 9, 10, 12, PEAK_WEEK];
+const STEP_WEEKS = [2, 5, 8, 11, 13];
 
-export const BLOCK = N1.long.length; // 18 weeks
-const HALF_WEEK = 7; // 0-based index of week 8
+type Miles = { short1: number; sortaLong: number; short2: number; long: number };
+
+/** Miles for block week `b` (0–17), starting the long run at `startLong`. */
+export function blockMiles(b: number, startLong: number): Miles {
+  const upIdx = UP_WEEKS.indexOf(b);
+  const upLong = (k: number) => Math.round(startLong + ((PEAK_LONG - startLong) * k) / (UP_WEEKS.length - 1));
+  let long: number;
+  if (upIdx >= 0) long = upLong(upIdx);
+  else if (STEP_WEEKS.includes(b)) {
+    const prevUp = UP_WEEKS.filter((u) => u < b).length - 1;
+    long = Math.max(5, Math.round(upLong(prevUp) * 0.7));
+  } else if (b === HALF_WEEK) long = 0;
+  else long = b === 15 ? 12 : b === 16 ? 8 : 0; // taper; race week has no long run
+
+  // Builds 3 → 10 miles, but never below where base training left it (about half the starting long run).
+  const sortaLong = b <= PEAK_WEEK ? Math.max(3 + Math.floor(b / 2), Math.min(10, Math.round(startLong / 2))) : [8, 6, 4][b - 15];
+  const short = b < 10 ? 3 : b < 14 ? 4 : b < 16 ? 5 : b === 16 ? 4 : 3;
+  // The second short run eases off a week earlier in the taper.
+  const short2 = b === 17 ? 2 : b === 15 ? 4 : short;
+  return { short1: short, sortaLong, short2, long };
+}
 
 const mi = (n: number) => Math.round(n * KM_PER_MI * 10) / 10;
 
@@ -45,14 +65,14 @@ interface Ctx {
 function run(date: string, type: Workout['type'], miles: number, title: string, note: string, pace: number, ctx: Ctx): Workout {
   const u = ctx.profile.units;
   const km = mi(miles);
-  const higdon = u === 'km' ? ` (${miles} mi in Higdon's plan)` : '';
+  const label = u === 'km' ? ` (${miles} mi)` : '';
   return {
     id: `${date}-${type}${title.startsWith('Sorta') ? '-sl' : ''}`,
     date,
     type,
     distanceKm: km,
     title,
-    description: `${fmtDist(km, u)}${higdon} ${note} ~${fmtPace(pace, u)}.`,
+    description: `${fmtDist(km, u)}${label} ${note} ~${fmtPace(pace, u)}.`,
     paceSecPerKm: pace,
   };
 }
@@ -117,19 +137,22 @@ function week(index: number, weekStart: string, phase: Phase, cutback: boolean, 
  * building slowly to 10 miles (enough for a spring half marathon) and a
  * step-back every third week.
  */
-function baseMiles(j: number, startLongMi: number): { short1: number; sortaLong: number; short2: number; long: number } {
+function baseMiles(j: number, startLongMi: number): Miles {
   const build = Math.min(10, Math.max(6, Math.round(startLongMi + j / 3)));
   const long = (j + 1) % 3 === 0 ? Math.max(5, build - 2) : build;
   return { short1: 3, sortaLong: Math.max(3, Math.round(long / 2)), short2: 3, long };
 }
 
-export function generateHigdonWeeks(profile: Profile, paces: Paces, startDate: string, firstIndex: number): PlanWeek[] {
+export function generateHigdonWeeks(profile: Profile, paces: Paces, startDate: string, firstIndex: number, startLongKm?: number): PlanWeek[] {
   const ctx: Ctx = { profile, paces };
   const start = mondayOf(startDate);
   const raceMonday = mondayOf(profile.raceDate);
   const total = Math.max(1, Math.floor(daysBetween(start, raceMonday) / 7) + 1);
   const baseWeeks = Math.max(0, total - BLOCK);
-  const startLongMi = Math.max(6, Math.round(profile.longestRecentRunKm / KM_PER_MI));
+  const startLongMi = Math.max(6, Math.round((startLongKm ?? profile.longestRecentRunKm) / KM_PER_MI));
+  // The block's first long run continues from where base training left off (6–10 miles).
+  const lastBuildWeek = Array.from({ length: baseWeeks }, (_, j) => j).reverse().find((j) => (j + 1) % 3 !== 0);
+  const blockStartLong = Math.min(10, lastBuildWeek !== undefined ? baseMiles(lastBuildWeek, startLongMi).long : startLongMi);
   const weeks: PlanWeek[] = [];
 
   for (let i = 0; i < total; i++) {
@@ -139,9 +162,9 @@ export function generateHigdonWeeks(profile: Profile, paces: Paces, startDate: s
       weeks.push(week(firstIndex + i, weekStart, 'foundation', (i + 1) % 3 === 0, higdonWeek(weekStart, ctx, m, {})));
       continue;
     }
-    // Plans shorter than 18 weeks join Higdon's schedule part-way through.
+    // Plans shorter than 18 weeks join the block part-way through.
     const b = i - baseWeeks + Math.max(0, BLOCK - total);
-    const m = { short1: N1.short1[b], sortaLong: N1.sortaLong[b], short2: N1.short2[b], long: N1.long[b] };
+    const m = blockMiles(b, Math.max(6, blockStartLong));
     const isRaceWeek = i === total - 1;
     const workouts = higdonWeek(weekStart, ctx, m, { half: b === HALF_WEEK, raceDate: isRaceWeek ? profile.raceDate : undefined });
     if (isRaceWeek) {
@@ -152,14 +175,13 @@ export function generateHigdonWeeks(profile: Profile, paces: Paces, startDate: s
         type: 'race',
         distanceKm: 42.195,
         title: profile.raceName || 'Race day!',
-        description: `Goal ${fmtPace(paces.marathon, profile.units)}. Higdon's advice: start slower than you think you should, drink at every station, and enjoy it.`,
+        description: `Goal ${fmtPace(paces.marathon, profile.units)}. Start slower than you think you should, drink at every station, and enjoy it.`,
         paceSecPerKm: paces.marathon,
       };
       if (idx >= 0) workouts[idx] = race;
       else workouts.push(race);
     }
-    const prevLong = b > 0 ? N1.long[b - 1] : 0;
-    const stepBack = m.long > 0 && m.long < prevLong && b < 15;
+    const stepBack = STEP_WEEKS.includes(b);
     weeks.push(week(firstIndex + i, weekStart, blockPhase(b), stepBack, workouts));
   }
   return weeks;

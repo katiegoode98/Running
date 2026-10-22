@@ -82,15 +82,15 @@ export function generatePlan(profile: Profile, opts: GenerateOptions): Plan {
 function generateWeeks(profile: Profile, opts: GenerateOptions): Plan {
   const paces = opts.paces ?? computePaces(profile.goalTimeSec, profile.recentRace);
   if (profile.planStyle === 'higdon-novice1') {
-    const weeks = generateHigdonWeeks(profile, paces, opts.startDate, opts.firstIndex ?? 0);
+    const weeks = generateHigdonWeeks(profile, paces, opts.startDate, opts.firstIndex ?? 0, opts.startLongKm);
     const plan = withStrengthDays({ createdAt: new Date().toISOString(), weeks, paces }, profile.raceDate);
-    // Higdon's schedule has no gym day; the strength session sits on one of his rest days as an optional extra.
+    // Higdon-style weeks have no gym day; the strength session sits on a rest day as an optional extra.
     return {
       ...plan,
       weeks: plan.weeks.map((w) => ({
         ...w,
         workouts: w.workouts.map((x) => (x.type === 'strength'
-          ? { ...x, title: `${x.title} (optional)`, description: `Optional — a rest day in Higdon's plan. ${x.description}` }
+          ? { ...x, title: `${x.title} (optional)`, description: `Optional — a rest day in the Higdon-style week. ${x.description}` }
           : x)),
       })),
     };
